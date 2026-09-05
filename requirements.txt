@@ -1,0 +1,30 @@
+# PyTorch (install separately with CUDA support)
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+
+# Core
+faster-whisper>=1.1
+httpx>=0.27
+pydantic>=2.0
+pydantic-settings>=2.0
+python-dotenv>=1.0
+omegaconf>=2.3
+
+# Audio
+sounddevice>=0.5
+soundfile>=0.12
+numpy>=1.26
+scipy>=1.12
+
+# LLM / API
+fastapi>=0.115
+uvicorn>=0.30
+
+# Storage
+aiosqlite>=0.20
+
+# CLI
+typer>=0.12
+colorama>=0.4
+
+# TTS dependency (pulled by torch, listed for clarity)
+# torchaudio

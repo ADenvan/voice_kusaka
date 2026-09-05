@@ -1,0 +1,98 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode-go/qwen3.7-plus",
+  "default_agent": "build",
+  "small_model": "opencode-go/qwen3.7-plus",
+  "instructions": [
+    "skills/skill-creator/SKILL.md",
+    "skills/sqlite3-best-practices/SKILL.md",
+    "skills/python-best-practices/SKILL.md",
+    "skills/pyside6-ui-best-practices/SKILL.md",
+    "skills/voice-assistant-architect/SKILL.md",
+    "skills/debugger/SKILL.md"
+
+
+  ],
+  "plugin": [
+
+  ],
+  "agent": {
+    "build": {
+      "description": "Primary coding agent for Python development work",
+      "mode": "primary",
+      "permission": {
+        "edit": "allow",
+        "read": "allow",
+        "bash": "allow"
+      }
+    },
+    "plan": {
+      "description": "Planning agent for analyzing and strategizing",
+      "mode": "primary",
+      "model": "opencode-go/qwen3.7-plus",
+      "permission": {
+        "edit": "deny",
+        "bash": "ask",
+        "read": "allow"
+      }
+    }
+  },
+  "mcp": {
+    "my-remote-mcp": {
+      "type": "remote",
+      "url": "https://huggingface.co/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "{env:HF_TOKEN}"
+      }
+    },
+    "gh_grep": {
+      "type": "remote",
+      "url": "https://mcp.grep.app"
+    },
+    "context7": {
+      "type": "local",
+      "command": [
+        "npx",
+        "@upstash/context7-mcp"
+      ],
+      "enabled": true
+    },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "npx",
+        "@playwright/mcp@latest"
+      ],
+      "enabled": true
+    },
+    "filesystem": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ],
+      "enabled": true
+    },
+    "sequential-thinking": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "enabled": true
+    }
+  },
+  "permission": {
+    "filesystem_*": "allow",
+    "my-remote-mcp_*": "allow",
+    "context7_*": "allow",
+    "gh_grep_*": "allow",
+    "playwright_*": "allow",
+    "sequential-thinking_*": "allow"
+  },
+  "command": {}
+}
