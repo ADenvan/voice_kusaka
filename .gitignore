@@ -193,3 +193,6 @@ data/*.db-shm
 #
 note_.md
 
+# Logs
+logs/
+

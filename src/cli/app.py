@@ -5,21 +5,12 @@ import sys
 import typer
 
 from src.core.config import Config, config
+from src.core.logging_config import setup_logging
 from src.core.pipeline import create_pipeline
 from src.llm.ollama_client import OllamaClient, check_ollama_health
 from src.memory.database import SQLiteStore
 
 app = typer.Typer(name="voice_ai", help="Local Russian voice AI assistant")
-
-_FORMAT = "%(asctime)s | %(name)s | %(levelname)s | %(message)s"
-
-
-def _setup_logging(level: str = "INFO") -> None:
-    logging.basicConfig(
-        level=getattr(logging, level.upper(), logging.INFO),
-        format=_FORMAT,
-        datefmt="%Y-%m-%dT%H:%M:%S",
-    )
 
 
 @app.command()
@@ -47,7 +38,7 @@ def run(
         overrides["activation_mode"] = mode
 
     cfg = Config(_env_file=None, **overrides) if overrides else config
-    _setup_logging(cfg.log_level)
+    setup_logging(cfg.log_level)
     logger = logging.getLogger("voice_ai")
 
     logger.info("Starting voice_ai pipeline (mode=%s)", cfg.activation_mode)
@@ -84,7 +75,7 @@ def chat(
         overrides["ollama_model"] = model
 
     cfg = Config(_env_file=None, **overrides) if overrides else config
-    _setup_logging(cfg.log_level)
+    setup_logging(cfg.log_level)
 
     asyncio.run(_text_chat(cfg))
 

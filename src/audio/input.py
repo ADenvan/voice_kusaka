@@ -3,6 +3,7 @@ import collections
 import logging
 from collections.abc import AsyncIterator
 
+
 import numpy as np
 import sounddevice as sd
 
