@@ -28,7 +28,7 @@ from src.llm.prompt_builder import PromptBuilder
 from src.memory.context import ContextManager
 from src.memory.database import SQLiteStore
 from src.stt.whisper_engine import FasterWhisperEngine
-from src.tts.silero_engine import SileroTTSEngine
+from src.tts.silero_engine import BilingualSileroTTSEngine
 
 logger = logging.getLogger("voice_ai.pipeline")
 
@@ -262,7 +262,7 @@ def create_pipeline(config: Config) -> Pipeline:
     vad = SileroVAD(config)
     stt = FasterWhisperEngine(config)
     llm = OllamaClient(config)
-    tts = SileroTTSEngine(config)
+    tts = BilingualSileroTTSEngine(config)
     memory = SQLiteStore(config)
     wake_word: STTWakeWord | None = None
     if config.activation_mode in ("wake_word", "continuous"):

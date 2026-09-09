@@ -14,6 +14,7 @@ class FasterWhisperEngine:
         self._model_name = config.whisper_model
         self._device = config.whisper_device
         self._compute_type = config.whisper_compute_type
+        self._language = config.tts_language
         self._model = None
 
     def load(self) -> None:
@@ -40,7 +41,7 @@ class FasterWhisperEngine:
         self._load_model()
         if len(audio) == 0:
             return ""
-        segments, _ = self._model.transcribe(audio, language="ru")
+        segments, _ = self._model.transcribe(audio, language=self._language)
         text = " ".join(s.text for s in segments).strip()
         return text
 

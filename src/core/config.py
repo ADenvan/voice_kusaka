@@ -27,10 +27,17 @@ class Config(BaseSettings):
     ollama_num_ctx: int = 4096
     ollama_num_predict: int = 256
 
+    tts_language: str = "ru"
+
     silero_language: str = "ru"
     silero_speaker: str = "v5_ru"
     silero_voice: str = "baya"
     silero_sample_rate: int = 48000
+
+    silero_en_language: str = "en"
+    silero_en_speaker: str = "v3_en"
+    silero_en_voice: str = "en_0"
+    silero_en_sample_rate: int = 48000
 
     output_device: int | None = None
 

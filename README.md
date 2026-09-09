@@ -37,6 +37,7 @@ pip install -r requirements-dev.txt
 ```bash
 ollama serve
 ollama pull qwen2.5:7b
+ollama pull gpt-oss:20b
 ```
 
 ### 4. Configure audio output device
@@ -56,6 +57,8 @@ python -m src.cli.app run --log-level DEBUG
 python -m src.cli.app run --mode button     # Enter для активации
 python -m src.cli.app run --mode wake_word  # Активация по фразе "войс ай"
 python -m src.cli.app run --mode continuous # Реагировать на любую речь
+
+python -m src.cli.app run --lang en # Английский
 ```
 
 ### Text mode (no microphone)

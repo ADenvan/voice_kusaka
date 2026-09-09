@@ -20,6 +20,7 @@ def run(
     device: str = typer.Option(None, help="Whisper device (cuda/cpu)"),
     log_level: str = typer.Option(None, help="Log level"),
     mode: str = typer.Option(None, help="Activation mode: button, wake_word, continuous"),
+    lang: str = typer.Option(None, help="Language: ru, en"),
 ) -> None:
     """Start voice assistant pipeline."""
     overrides = {}
@@ -36,6 +37,11 @@ def run(
             print(f"Error: mode must be 'button', 'wake_word', or 'continuous', got '{mode}'")
             raise typer.Exit(code=1)
         overrides["activation_mode"] = mode
+    if lang:
+        if lang not in ("ru", "en"):
+            print(f"Error: lang must be 'ru' or 'en', got '{lang}'")
+            raise typer.Exit(code=1)
+        overrides["tts_language"] = lang
 
     cfg = Config(_env_file=None, **overrides) if overrides else config
     setup_logging(cfg.log_level)
@@ -146,6 +152,7 @@ def show_config() -> None:
     """Show current configuration."""
     cfg = config
     print(f"  activation_mode:    {cfg.activation_mode}")
+    print(f"  tts_language:        {cfg.tts_language}")
     print(f"  sample_rate:         {cfg.sample_rate}")
     print(f"  chunk_duration_ms:   {cfg.chunk_duration_ms}")
     print(f"  vad_threshold:       {cfg.vad_threshold}")
