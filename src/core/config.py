@@ -21,6 +21,7 @@ class Config(BaseSettings):
     whisper_compute_type: str = "float16"
 
     llm_provider: str = "ollama"
+    # llm_provider: str = "lm-studio"
 
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5:7b"
@@ -60,6 +61,17 @@ class Config(BaseSettings):
 
     db_path: str = "data/voice_ai.db"
     history_limit: int = 50
+
+    rag_pdf_directory: str = "data/pdf"
+    rag_chroma_dir: str = "data/chroma_db"
+    rag_embedding_model: str = "intfloat/multilingual-e5-large"
+    rag_embedding_device: str = "cpu"
+    rag_chunk_size: int = 1024
+    rag_chunk_overlap: int = 200
+    rag_retriever_k: int = 3
+    rag_max_retries: int = 3
+    rag_use_web_search: bool = True
+    rag_llm_temperature: float = 0.0
 
     log_level: str = "INFO"
 

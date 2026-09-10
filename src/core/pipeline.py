@@ -263,8 +263,16 @@ def create_pipeline(config: Config) -> Pipeline:
     vad = SileroVAD(config)
     stt = FasterWhisperEngine(config)
 
-    if config.llm_provider == "lmstudio":
-        llm: LLMClient = LMStudioClient(config)
+    from src.rag.pdf_loader import PDFDocumentLoader
+
+    if PDFDocumentLoader.has_pdf_files(config.rag_pdf_directory):
+        from src.rag.agent import RAGClient, create_rag_config
+
+        rag_config = create_rag_config(config)
+        llm: LLMClient = RAGClient(rag_config)
+        logger.info("RAG enabled: found PDF files in %s", config.rag_pdf_directory)
+    elif config.llm_provider == "lmstudio":
+        llm = LMStudioClient(config)
     else:
         llm = OllamaClient(config)
 

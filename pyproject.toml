@@ -33,7 +33,7 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = ["sounddevice", "faster_whisper", "torch", "torchaudio", "scipy.*", "langchain_openai", "langchain_core.*"]
+module = ["sounddevice", "faster_whisper", "torch", "torchaudio", "scipy.*", "langchain_openai", "langchain_core.*", "langchain_chroma", "langchain_huggingface", "langchain_community.*", "langchain_text_splitters", "langgraph.*", "chromadb.*", "duckduckgo_search", "pypdf", "typing_extensions"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

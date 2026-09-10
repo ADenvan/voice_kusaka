@@ -114,6 +114,23 @@ pytest tests/ -v -k "not test_models_command"
 # Или без активации:
 # .venv. Нужно установить в виртуальное окружение:
 .venv\Scripts\python.exe -m pip install langchain-openai langchain-core
+.venv\Scripts\python.exe -m pip install duckduckgo-search chromadb langchain-text-splitters langgraph pypdf langchain-chroma
+```
+
+# Rag
+Положите PDF файлы в data/pdf/
+```bash
+# Сканируйте директорию:
+python -m src.cli.app rag-scan
+# Запросите RAG агента:
+python -m src.cli.app rag-query "Что такое сортировка?"
+# Запустите голосовой ассистент (RAG активируется автоматически):
+python -m src.cli.app run
+# Полезные команды:
+python -m src.cli.app rag-stats    # Статистика vectorstore
+python -m src.cli.app rag-clear    # Очистить vectorstore
+python -m src.cli.app show-config  # Показать все настройки (включая RAG)
+#
 ```
 
 ## Configuration

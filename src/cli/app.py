@@ -238,7 +238,81 @@ def show_config() -> None:
     print(f"  output_device:       {cfg.output_device}")
     print(f"  db_path:             {cfg.db_path}")
     print(f"  history_limit:       {cfg.history_limit}")
+    print(f"  rag_pdf_directory:   {cfg.rag_pdf_directory}")
+    print(f"  rag_chroma_dir:      {cfg.rag_chroma_dir}")
+    print(f"  rag_embedding_model: {cfg.rag_embedding_model}")
+    print(f"  rag_chunk_size:      {cfg.rag_chunk_size}")
+    print(f"  rag_retriever_k:     {cfg.rag_retriever_k}")
+    print(f"  rag_use_web_search:  {cfg.rag_use_web_search}")
     print(f"  log_level:           {cfg.log_level}")
+
+
+@app.command()
+def rag_scan(
+    directory: str = typer.Option(None, help="PDF directory to scan"),
+) -> None:
+    """Scan PDF directory and update vectorstore."""
+    cfg = config
+    dir_to_scan = directory or cfg.rag_pdf_directory
+
+    from src.rag.agent import RAGClient, create_rag_config
+
+    rag_config = create_rag_config(cfg)
+    client = RAGClient(rag_config)
+
+    print(f"Сканирование: {dir_to_scan}")
+    count = client.scan_pdf_directory(dir_to_scan)
+    if count > 0:
+        print(f"Добавлено чанков: {count}")
+    else:
+        print("PDF файлы не найдены.")
+
+
+@app.command()
+def rag_query(
+    question: str = typer.Argument(..., help="Question to ask"),
+) -> None:
+    """Query the RAG agent (text mode)."""
+    cfg = config
+
+    from src.rag.agent import RAGClient, create_rag_config
+
+    rag_config = create_rag_config(cfg)
+    client = RAGClient(rag_config)
+
+    messages = [{"role": "user", "content": question}]
+    print("Думаю...")
+    result = asyncio.run(client.chat(messages))
+    print(f"\nОтвет: {result}")
+
+
+@app.command()
+def rag_stats() -> None:
+    """Show vectorstore statistics."""
+    cfg = config
+
+    from src.rag.agent import RAGClient, create_rag_config
+
+    rag_config = create_rag_config(cfg)
+    client = RAGClient(rag_config)
+
+    stats = client.get_stats()
+    print(f"  Документов/чанков: {stats['document_count']}")
+    print(f"  Хранилище: {stats['persist_dir']}")
+
+
+@app.command()
+def rag_clear() -> None:
+    """Clear the vectorstore."""
+    cfg = config
+
+    from src.rag.agent import RAGClient, create_rag_config
+
+    rag_config = create_rag_config(cfg)
+    client = RAGClient(rag_config)
+
+    client.clear_vectorstore()
+    print("Vectorstore очищен.")
 
 
 if __name__ == "__main__":
