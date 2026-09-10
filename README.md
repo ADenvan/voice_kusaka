@@ -40,6 +40,10 @@ ollama pull qwen2.5:7b
 ollama pull gpt-oss:20b
 ```
 
+```bash
+LM Studio qwen2.5-coder-7b-instruct
+```
+
 ### 4. Configure audio output device
 ```bash
 python -c "import sounddevice as sd; print(sd.query_devices())"
@@ -52,7 +56,7 @@ OUTPUT_DEVICE=18 #
 
 ### 5. Run
 ```bash
-python -m src.cli.app run
+python -m src.cli.app run # Использовать провайдер из .env (LLM_PROVIDER=ollama)
 python -m src.cli.app run --log-level DEBUG
 python -m src.cli.app run --mode button     # Enter для активации
 python -m src.cli.app run --mode wake_word  # Активация по фразе "войс ай"
@@ -63,8 +67,34 @@ python -m src.cli.app run --lang en # Английский
 
 ### Text mode (no microphone)
 ```bash
+# Использовать провайдер из .env (LLM_PROVIDER=ollama)
 python -m src.cli.app chat
 ```
+
+# Теперь для теста чата с LM Studio:
+```bash
+# Вариант 1: Использовать провайдер из .env (LLM_PROVIDER=lmstudio)
+python -m src.cli.app chat
+
+# Вариант 2: Явно указать провайдер
+python -m src.cli.app chat --provider lmstudio
+
+# Вариант 3: Указать провайдер и модель
+python -m src.cli.app chat --provider lmstudio --model qwen2.5-coder-7b-instruct
+# Показать текущую конфигурацию
+python -m src.cli.app show-config
+
+# Список моделей из активного провайдера
+python -m src.cli.app models
+
+# Список моделей из конкретного провайдера
+python -m src.cli.app models --provider ollama
+python -m src.cli.app models --provider lmstudio
+
+# Голосовой ассистент с LM Studio
+python -m src.cli.app run --provider lmstudio
+```
+
 
 ### Diagnostics
 ```bash
@@ -76,6 +106,14 @@ python scripts/test_tts.py
 ### Tests
 ```bash
 pytest tests/ -v -k "not test_models_command"
+```
+
+### .venv
+
+```bash
+# Или без активации:
+# .venv. Нужно установить в виртуальное окружение:
+.venv\Scripts\python.exe -m pip install langchain-openai langchain-core
 ```
 
 ## Configuration

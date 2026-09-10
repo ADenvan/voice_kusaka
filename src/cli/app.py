@@ -7,15 +7,33 @@ import typer
 from src.core.config import Config, config
 from src.core.logging_config import setup_logging
 from src.core.pipeline import create_pipeline
+from src.core.protocols import LLMClient
+from src.llm.lmstudio_client import LMStudioClient, check_lmstudio_health
 from src.llm.ollama_client import OllamaClient, check_ollama_health
 from src.memory.database import SQLiteStore
 
 app = typer.Typer(name="voice_ai", help="Local Russian voice AI assistant")
 
 
+def get_llm_client(cfg: Config) -> LLMClient:
+    """Get LLM client based on provider configuration."""
+    if cfg.llm_provider == "lmstudio":
+        return LMStudioClient(cfg)
+    return OllamaClient(cfg)
+
+
+async def check_llm_health(cfg: Config) -> None:
+    """Check LLM provider health based on configuration."""
+    if cfg.llm_provider == "lmstudio":
+        await check_lmstudio_health(cfg)
+    else:
+        await check_ollama_health(cfg)
+
+
 @app.command()
 def run(
-    model: str = typer.Option(None, help="Ollama model name"),
+    model: str = typer.Option(None, help="LLM model name"),
+    provider: str = typer.Option(None, help="LLM provider: ollama, lmstudio"),
     whisper: str = typer.Option(None, help="Whisper model size"),
     device: str = typer.Option(None, help="Whisper device (cuda/cpu)"),
     log_level: str = typer.Option(None, help="Log level"),
@@ -25,7 +43,17 @@ def run(
     """Start voice assistant pipeline."""
     overrides = {}
     if model:
-        overrides["ollama_model"] = model
+        if provider == "lmstudio":
+            overrides["lmstudio_model"] = model
+        elif provider == "ollama":
+            overrides["ollama_model"] = model
+        else:
+            overrides["ollama_model"] = model
+    if provider:
+        if provider not in ("ollama", "lmstudio"):
+            print(f"Error: provider must be 'ollama' or 'lmstudio', got '{provider}'")
+            raise typer.Exit(code=1)
+        overrides["llm_provider"] = provider
     if whisper:
         overrides["whisper_model"] = whisper
     if device:
@@ -48,8 +76,12 @@ def run(
     logger = logging.getLogger("voice_ai")
 
     logger.info("Starting voice_ai pipeline (mode=%s)", cfg.activation_mode)
+    logger.info("  LLM provider: %s", cfg.llm_provider)
+    if cfg.llm_provider == "lmstudio":
+        logger.info("  LM Studio model: %s", cfg.lmstudio_model)
+    else:
+        logger.info("  Ollama model: %s", cfg.ollama_model)
     logger.info("  Whisper model: %s (%s)", cfg.whisper_model, cfg.whisper_device)
-    logger.info("  Ollama model: %s", cfg.ollama_model)
     if cfg.activation_mode in ("wake_word", "continuous"):
         logger.info("  Wake word model: %s (%s)", cfg.wake_word_model, cfg.wake_word_device)
         logger.info("  Wake word phrases: %s", cfg.wake_word_phrases)
@@ -61,7 +93,7 @@ def run(
 
 
 async def _run_pipeline(cfg: Config) -> None:
-    await check_ollama_health(cfg)
+    await check_llm_health(cfg)
     pipeline = create_pipeline(cfg)
     try:
         await pipeline.run()
@@ -73,12 +105,23 @@ async def _run_pipeline(cfg: Config) -> None:
 
 @app.command()
 def chat(
-    model: str = typer.Option(None, help="Ollama model name"),
+    model: str = typer.Option(None, help="LLM model name"),
+    provider: str = typer.Option(None, help="LLM provider: ollama, lmstudio"),
 ) -> None:
     """Text-only chat mode (no microphone/speakers)."""
     overrides = {}
     if model:
-        overrides["ollama_model"] = model
+        if provider == "lmstudio":
+            overrides["lmstudio_model"] = model
+        elif provider == "ollama":
+            overrides["ollama_model"] = model
+        else:
+            overrides["ollama_model"] = model
+    if provider:
+        if provider not in ("ollama", "lmstudio"):
+            print(f"Error: provider must be 'ollama' or 'lmstudio', got '{provider}'")
+            raise typer.Exit(code=1)
+        overrides["llm_provider"] = provider
 
     cfg = Config(_env_file=None, **overrides) if overrides else config
     setup_logging(cfg.log_level)
@@ -90,8 +133,8 @@ async def _text_chat(cfg: Config) -> None:
     from src.llm.prompt_builder import PromptBuilder
     from src.memory.context import ContextManager
 
-    await check_ollama_health(cfg)
-    client = OllamaClient(cfg)
+    await check_llm_health(cfg)
+    client = get_llm_client(cfg)
     memory = SQLiteStore(cfg)
     prompt_builder = PromptBuilder()
     ContextManager(max_messages=cfg.history_limit)
@@ -126,23 +169,40 @@ async def _text_chat(cfg: Config) -> None:
 
 
 @app.command()
-def models() -> None:
-    """List available Ollama models."""
-    cfg = config
+def models(
+    provider: str = typer.Option(None, help="LLM provider: ollama, lmstudio"),
+) -> None:
+    """List available LLM models."""
+    overrides = {}
+    if provider:
+        if provider not in ("ollama", "lmstudio"):
+            print(f"Error: provider must be 'ollama' or 'lmstudio', got '{provider}'")
+            raise typer.Exit(code=1)
+        overrides["llm_provider"] = provider
+
+    cfg = Config(_env_file=None, **overrides) if overrides else config
 
     async def _list() -> None:
-        client = OllamaClient(cfg)
+        client = get_llm_client(cfg)
         try:
             model_list = await client.list_models()
             if not model_list:
-                print("Нет установленных моделей.")
-                print("Установите: ollama pull qwen2.5:7b")
+                if cfg.llm_provider == "lmstudio":
+                    print("Нет загруженных моделей в LM Studio.")
+                    print("Загрузите модель через интерфейс LM Studio.")
+                else:
+                    print("Нет установленных моделей.")
+                    print("Установите: ollama pull qwen2.5:7b")
             else:
+                print(f"Провайдер: {cfg.llm_provider}")
                 for m in model_list:
                     print(f"  {m}")
         except Exception as e:
             print(f"Ошибка: {e}")
-            print("Убедитесь, что Ollama запущен: ollama serve")
+            if cfg.llm_provider == "lmstudio":
+                print("Убедитесь, что LM Studio запущен с локальным сервером.")
+            else:
+                print("Убедитесь, что Ollama запущен: ollama serve")
 
     asyncio.run(_list())
 
@@ -152,6 +212,7 @@ def show_config() -> None:
     """Show current configuration."""
     cfg = config
     print(f"  activation_mode:    {cfg.activation_mode}")
+    print(f"  llm_provider:       {cfg.llm_provider}")
     print(f"  tts_language:        {cfg.tts_language}")
     print(f"  sample_rate:         {cfg.sample_rate}")
     print(f"  chunk_duration_ms:   {cfg.chunk_duration_ms}")
@@ -163,6 +224,10 @@ def show_config() -> None:
     print(f"  ollama_model:        {cfg.ollama_model}")
     print(f"  ollama_timeout:      {cfg.ollama_timeout}")
     print(f"  ollama_temperature:  {cfg.ollama_temperature}")
+    print(f"  lmstudio_base_url:   {cfg.lmstudio_base_url}")
+    print(f"  lmstudio_model:      {cfg.lmstudio_model}")
+    print(f"  lmstudio_timeout:    {cfg.lmstudio_timeout}")
+    print(f"  lmstudio_temperature:{cfg.lmstudio_temperature}")
     print(f"  silero_language:     {cfg.silero_language}")
     print(f"  silero_speaker:      {cfg.silero_speaker}")
     print(f"  wake_word_model:     {cfg.wake_word_model}")

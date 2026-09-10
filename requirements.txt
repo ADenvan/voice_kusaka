@@ -18,6 +18,8 @@ scipy>=1.12
 # LLM / API
 fastapi>=0.115
 uvicorn>=0.30
+langchain-openai>=0.3
+langchain-core>=0.3
 
 # Storage
 aiosqlite>=0.20

@@ -23,6 +23,7 @@ from src.core.protocols import (
     TurnResult,
     WakeWordDetector,
 )
+from src.llm.lmstudio_client import LMStudioClient
 from src.llm.ollama_client import OllamaClient
 from src.llm.prompt_builder import PromptBuilder
 from src.memory.context import ContextManager
@@ -261,12 +262,19 @@ def create_pipeline(config: Config) -> Pipeline:
     audio_out = SoundDeviceOutput(config)
     vad = SileroVAD(config)
     stt = FasterWhisperEngine(config)
-    llm = OllamaClient(config)
+
+    if config.llm_provider == "lmstudio":
+        llm: LLMClient = LMStudioClient(config)
+    else:
+        llm = OllamaClient(config)
+
     tts = BilingualSileroTTSEngine(config)
     memory = SQLiteStore(config)
     wake_word: STTWakeWord | None = None
     if config.activation_mode in ("wake_word", "continuous"):
         wake_word = STTWakeWord(config)
-    pipeline = Pipeline(audio_in, audio_out, vad, stt, llm, tts, memory, config, wake_word=wake_word)
+    pipeline = Pipeline(
+        audio_in, audio_out, vad, stt, llm, tts, memory, config, wake_word=wake_word
+    )
     audio_in.shutdown_event = pipeline.shutdown_event
     return pipeline

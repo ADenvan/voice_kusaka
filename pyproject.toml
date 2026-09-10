@@ -6,8 +6,8 @@ requires-python = ">=3.13"
 dependencies = []
 
 [build-system]
-requires = ["setuptools>=75.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+requires = ["setuptools>=75.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -33,7 +33,7 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = ["sounddevice", "faster_whisper", "torch", "torchaudio", "scipy.*"]
+module = ["sounddevice", "faster_whisper", "torch", "torchaudio", "scipy.*", "langchain_openai", "langchain_core.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

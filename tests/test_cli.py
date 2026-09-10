@@ -15,7 +15,13 @@ def test_show_config() -> None:
 def test_models_command_fails_gracefully() -> None:
     result = runner.invoke(app, ["models"])
     assert result.exit_code == 0
-    assert "Ошибка" in result.output or "Нет" in result.output or "ollama" in result.output.lower()
+    assert (
+        "Ошибка" in result.output
+        or "Нет" in result.output
+        or "ollama" in result.output.lower()
+        or "lmstudio" in result.output.lower()
+        or "Провайдер" in result.output
+    )
 
 
 def test_help() -> None:

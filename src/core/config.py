@@ -20,12 +20,21 @@ class Config(BaseSettings):
     whisper_device: str = "cuda"
     whisper_compute_type: str = "float16"
 
+    llm_provider: str = "ollama"
+
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5:7b"
     ollama_timeout: int = 60
     ollama_temperature: float = 0.7
     ollama_num_ctx: int = 4096
     ollama_num_predict: int = 256
+
+    lmstudio_base_url: str = "http://localhost:1234/v1"
+    lmstudio_model: str = "qwen2.5-coder-7b-instruct"
+    lmstudio_api_key: str = "lm-studio"
+    lmstudio_temperature: float = 0.7
+    lmstudio_timeout: int = 60
+    lmstudio_max_tokens: int = 256
 
     tts_language: str = "ru"
 
