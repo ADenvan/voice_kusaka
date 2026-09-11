@@ -4,9 +4,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import numpy as np
 import pytest
 
-from src.audio.wake_word import STTWakeWord
-from src.core.config import Config
-from src.core.exceptions import WakeWordError
+from voice_ai.audio.wake_word import STTWakeWord
+from voice_ai.core.config import Config
+from voice_ai.core.exceptions import WakeWordError
 
 
 @pytest.fixture
@@ -140,7 +140,7 @@ class TestSTTWakeWord:
 
     def test_load_raises_on_failure(self, wake_config: Config) -> None:
         wake = STTWakeWord(wake_config)
-        with patch("src.audio.wake_word.WakeWordError", WakeWordError):
+        with patch("voice_ai.audio.wake_word.WakeWordError", WakeWordError):
             with patch("faster_whisper.WhisperModel", side_effect=RuntimeError("no model")):
                 with pytest.raises(WakeWordError):
                     wake._load_model()

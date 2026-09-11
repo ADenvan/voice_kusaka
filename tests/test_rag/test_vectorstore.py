@@ -15,7 +15,7 @@ class FakeEmbeddings(Embeddings):
 def test_vectorstore_add_documents(tmp_path) -> None:
     from langchain_core.documents import Document
 
-    from src.rag.vectorstore import ChromaVectorStore
+    from voice_ai.rag.vectorstore import ChromaVectorStore
 
     embeddings = FakeEmbeddings()
     store = ChromaVectorStore(str(tmp_path / "chroma"), embeddings)
@@ -29,7 +29,7 @@ def test_vectorstore_add_documents(tmp_path) -> None:
 
 
 def test_vectorstore_get_stats(tmp_path) -> None:
-    from src.rag.vectorstore import ChromaVectorStore
+    from voice_ai.rag.vectorstore import ChromaVectorStore
 
     embeddings = FakeEmbeddings()
     store = ChromaVectorStore(str(tmp_path / "chroma"), embeddings)
@@ -42,7 +42,7 @@ def test_vectorstore_get_stats(tmp_path) -> None:
 def test_vectorstore_clear(tmp_path) -> None:
     from langchain_core.documents import Document
 
-    from src.rag.vectorstore import ChromaVectorStore
+    from voice_ai.rag.vectorstore import ChromaVectorStore
 
     embeddings = FakeEmbeddings()
     store = ChromaVectorStore(str(tmp_path / "chroma"), embeddings)
@@ -56,7 +56,7 @@ def test_vectorstore_clear(tmp_path) -> None:
 
 
 def test_vectorstore_as_retriever(tmp_path) -> None:
-    from src.rag.vectorstore import ChromaVectorStore
+    from voice_ai.rag.vectorstore import ChromaVectorStore
 
     embeddings = FakeEmbeddings()
     store = ChromaVectorStore(str(tmp_path / "chroma"), embeddings)

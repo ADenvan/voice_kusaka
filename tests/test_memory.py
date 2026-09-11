@@ -1,9 +1,9 @@
 import pytest
 
-from src.core.config import Config
-from src.llm.prompt_builder import SYSTEM_PROMPT, PromptBuilder
-from src.memory.context import ContextManager
-from src.memory.database import SQLiteStore
+from voice_ai.core.config import Config
+from voice_ai.llm.prompt_builder import SYSTEM_PROMPT, PromptBuilder
+from voice_ai.memory.context import ContextManager
+from voice_ai.memory.database import SQLiteStore
 
 
 def test_trim_history_no_trim_needed() -> None:

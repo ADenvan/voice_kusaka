@@ -2,8 +2,8 @@ from datetime import UTC, datetime
 
 import aiosqlite
 
-from src.core.config import Config
-from src.core.exceptions import MemoryError as VoiceAIMemoryError
+from voice_ai.core.config import Config
+from voice_ai.core.exceptions import MemoryError as VoiceAIMemoryError
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS sessions (

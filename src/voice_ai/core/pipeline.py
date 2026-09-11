@@ -5,13 +5,13 @@ from typing import NoReturn
 
 import numpy as np
 
-from src.audio.input import SoundDeviceInput
-from src.audio.output import SoundDeviceOutput
-from src.audio.vad import SileroVAD
-from src.audio.wake_word import STTWakeWord
-from src.core.config import Config
-from src.core.exceptions import EmptyTranscriptionError
-from src.core.protocols import (
+from voice_ai.audio.input import SoundDeviceInput
+from voice_ai.audio.output import SoundDeviceOutput
+from voice_ai.audio.vad import SileroVAD
+from voice_ai.audio.wake_word import STTWakeWord
+from voice_ai.core.config import Config
+from voice_ai.core.exceptions import EmptyTranscriptionError
+from voice_ai.core.protocols import (
     VAD,
     AudioInput,
     AudioOutput,
@@ -23,13 +23,13 @@ from src.core.protocols import (
     TurnResult,
     WakeWordDetector,
 )
-from src.llm.lmstudio_client import LMStudioClient
-from src.llm.ollama_client import OllamaClient
-from src.llm.prompt_builder import PromptBuilder
-from src.memory.context import ContextManager
-from src.memory.database import SQLiteStore
-from src.stt.whisper_engine import FasterWhisperEngine
-from src.tts.silero_engine import BilingualSileroTTSEngine
+from voice_ai.llm.lmstudio_client import LMStudioClient
+from voice_ai.llm.ollama_client import OllamaClient
+from voice_ai.llm.prompt_builder import PromptBuilder
+from voice_ai.memory.context import ContextManager
+from voice_ai.memory.database import SQLiteStore
+from voice_ai.stt.whisper_engine import FasterWhisperEngine
+from voice_ai.tts.silero_engine import BilingualSileroTTSEngine
 
 logger = logging.getLogger("voice_ai.pipeline")
 
@@ -263,10 +263,10 @@ def create_pipeline(config: Config) -> Pipeline:
     vad = SileroVAD(config)
     stt = FasterWhisperEngine(config)
 
-    from src.rag.pdf_loader import PDFDocumentLoader
+    from voice_ai.rag.pdf_loader import PDFDocumentLoader
 
     if PDFDocumentLoader.has_pdf_files(config.rag_pdf_directory):
-        from src.rag.agent import RAGClient, create_rag_config
+        from voice_ai.rag.agent import RAGClient, create_rag_config
 
         rag_config = create_rag_config(config)
         llm: LLMClient = RAGClient(rag_config)

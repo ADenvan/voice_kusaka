@@ -114,7 +114,7 @@ pytest tests/ -v -k "not test_models_command"
 # Или без активации:
 # .venv. Нужно установить в виртуальное окружение:
 .venv\Scripts\python.exe -m pip install langchain-openai langchain-core
-.venv\Scripts\python.exe -m pip install duckduckgo-search chromadb langchain-text-splitters langgraph pypdf langchain-chroma
+.venv\Scripts\python.exe -m pip install duckduckgo-search chromadb langchain-text-splitters langgraph pypdf langchain-chroma langchain-ollama
 ```
 
 # Rag

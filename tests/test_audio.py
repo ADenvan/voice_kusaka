@@ -1,7 +1,7 @@
 import numpy as np
 
-from src.audio.input import RingBuffer
-from src.audio.output import clamp_audio, resample_audio
+from voice_ai.audio.input import RingBuffer
+from voice_ai.audio.output import clamp_audio, resample_audio
 
 
 def test_resample_same_rate() -> None:
@@ -39,8 +39,8 @@ def test_clamp_audio_exceeds_range() -> None:
 
 
 def test_energy_vad_silence() -> None:
-    from src.audio.vad import EnergyVAD
-    from src.core.config import Config
+    from voice_ai.audio.vad import EnergyVAD
+    from voice_ai.core.config import Config
 
     config = Config(_env_file=None, db_path=":memory:")
     vad = EnergyVAD(config)
@@ -49,8 +49,8 @@ def test_energy_vad_silence() -> None:
 
 
 def test_energy_vad_speech() -> None:
-    from src.audio.vad import EnergyVAD
-    from src.core.config import Config
+    from voice_ai.audio.vad import EnergyVAD
+    from voice_ai.core.config import Config
 
     config = Config(_env_file=None, db_path=":memory:")
     vad = EnergyVAD(config)
@@ -60,8 +60,8 @@ def test_energy_vad_speech() -> None:
 
 
 def test_energy_vad_prob_range() -> None:
-    from src.audio.vad import EnergyVAD
-    from src.core.config import Config
+    from voice_ai.audio.vad import EnergyVAD
+    from voice_ai.core.config import Config
 
     config = Config(_env_file=None, db_path=":memory:")
     vad = EnergyVAD(config)

@@ -4,6 +4,7 @@
   "default_agent": "build",
   "small_model": "opencode-go/qwen3.7-plus",
   "instructions": [
+    ".opencode/instructions/INSTRUCTIONS.md",
     "skills/skill-creator/SKILL.md",
     "skills/sqlite3-best-practices/SKILL.md",
     "skills/python-best-practices/SKILL.md",

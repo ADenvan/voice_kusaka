@@ -7,8 +7,8 @@ from collections.abc import AsyncIterator
 import numpy as np
 import sounddevice as sd
 
-from src.core.config import Config
-from src.core.exceptions import DeviceNotFoundError
+from voice_ai.core.config import Config
+from voice_ai.core.exceptions import DeviceNotFoundError
 
 logger = logging.getLogger("voice_ai.audio.input")
 

@@ -7,8 +7,8 @@ import zipfile
 
 import numpy as np
 
-from src.core.config import Config
-from src.tts.language_detector import segment_by_language
+from voice_ai.core.config import Config
+from voice_ai.tts.language_detector import segment_by_language
 
 logger = logging.getLogger("voice_ai.tts")
 
@@ -103,7 +103,7 @@ class _SileroModel:
             sys.path.insert(0, repo_dir)
 
         try:
-            from src.silero import silero_tts
+            from voice_ai.silero import silero_tts
             result = silero_tts(
                 language=self._language,
                 speaker=self._speaker,

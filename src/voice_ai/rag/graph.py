@@ -9,7 +9,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, StateGraph
 from typing_extensions import TypedDict
 
-from src.rag.prompts import (
+from voice_ai.rag.prompts import (
     ANSWER_GRADER_INSTRUCTIONS,
     ANSWER_GRADER_PROMPT,
     DOC_GRADER_INSTRUCTIONS,
@@ -19,7 +19,7 @@ from src.rag.prompts import (
     RAG_PROMPT,
     ROUTER_INSTRUCTIONS,
 )
-from src.rag.web_search import DuckDuckGoSearchTool
+from voice_ai.rag.web_search import DuckDuckGoSearchTool
 
 logger = logging.getLogger("voice_ai.rag.graph")
 
