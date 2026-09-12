@@ -1,6 +1,6 @@
 from pydantic_core._pydantic_core import ValidationError
 
-from voice_ai.core.config import Config
+from src.core.config import Config
 
 
 def test_config_defaults() -> None:

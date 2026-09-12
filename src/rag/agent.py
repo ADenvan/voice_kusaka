@@ -3,18 +3,17 @@ import logging
 from collections.abc import AsyncIterator
 from typing import Any
 
-from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 
-from voice_ai.core.config import Config
-from voice_ai.core.exceptions import LLMConnectionError, LLMTimeoutError
-from voice_ai.rag.config import RAGConfig
-from voice_ai.rag.embeddings import EmbeddingProvider
-from voice_ai.rag.graph import RAGGraphBuilder
-from voice_ai.rag.pdf_loader import PDFDocumentLoader
-from voice_ai.rag.vectorstore import ChromaVectorStore
-from voice_ai.rag.web_search import DuckDuckGoSearchTool
+from src.core.config import Config
+from src.core.exceptions import LLMConnectionError, LLMTimeoutError
+from src.rag.config import RAGConfig
+from src.rag.embeddings import EmbeddingProvider
+from src.rag.graph import RAGGraphBuilder
+from src.rag.pdf_loader import PDFDocumentLoader
+from src.rag.vectorstore import ChromaVectorStore
+from src.rag.web_search import DuckDuckGoSearchTool
 
 logger = logging.getLogger("voice_ai.rag.agent")
 
@@ -47,17 +46,18 @@ class RAGClient:
             rag_config.pdf_directory,
         )
 
-    def _create_llm(self) -> ChatOllama | ChatOpenAI:
-        """Create LLM instance for the RAG graph."""
+    def _create_llm(self) -> ChatOpenAI:
+        """Create ChatOpenAI instance for the RAG graph."""
         cfg = self._config
         if cfg.llm_provider == "ollama":
-            return ChatOllama(
-                model=cfg.llm_model,
-                base_url=cfg.llm_base_url,
-                temperature=cfg.llm_temperature,
-            )
+            base_url = cfg.llm_base_url.rstrip("/")
+            if not base_url.endswith("/v1"):
+                base_url = base_url + "/v1"
+        else:
+            base_url = cfg.llm_base_url
+
         return ChatOpenAI(
-            base_url=cfg.llm_base_url,
+            base_url=base_url,
             openai_api_key=SecretStr(cfg.llm_api_key),  # type: ignore[call-arg]
             model=cfg.llm_model,
             temperature=cfg.llm_temperature,

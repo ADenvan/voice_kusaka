@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from voice_ai.core.config import Config
+from src.core.config import Config
 
 logger = logging.getLogger("voice_ai.audio.vad")
 

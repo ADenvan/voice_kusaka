@@ -4,13 +4,13 @@ import sys
 
 import typer
 
-from voice_ai.core.config import Config, config
-from voice_ai.core.logging_config import setup_logging
-from voice_ai.core.pipeline import create_pipeline
-from voice_ai.core.protocols import LLMClient
-from voice_ai.llm.lmstudio_client import LMStudioClient, check_lmstudio_health
-from voice_ai.llm.ollama_client import OllamaClient, check_ollama_health
-from voice_ai.memory.database import SQLiteStore
+from src.core.config import Config, config
+from src.core.logging_config import setup_logging
+from src.core.pipeline import create_pipeline
+from src.core.protocols import LLMClient
+from src.llm.lmstudio_client import LMStudioClient, check_lmstudio_health
+from src.llm.ollama_client import OllamaClient, check_ollama_health
+from src.memory.database import SQLiteStore
 
 app = typer.Typer(name="voice_ai", help="Local Russian voice AI assistant")
 
@@ -130,8 +130,8 @@ def chat(
 
 
 async def _text_chat(cfg: Config) -> None:
-    from voice_ai.llm.prompt_builder import PromptBuilder
-    from voice_ai.memory.context import ContextManager
+    from src.llm.prompt_builder import PromptBuilder
+    from src.memory.context import ContextManager
 
     await check_llm_health(cfg)
     client = get_llm_client(cfg)
@@ -255,7 +255,7 @@ def rag_scan(
     cfg = config
     dir_to_scan = directory or cfg.rag_pdf_directory
 
-    from voice_ai.rag.agent import RAGClient, create_rag_config
+    from src.rag.agent import RAGClient, create_rag_config
 
     rag_config = create_rag_config(cfg)
     client = RAGClient(rag_config)
@@ -275,7 +275,7 @@ def rag_query(
     """Query the RAG agent (text mode)."""
     cfg = config
 
-    from voice_ai.rag.agent import RAGClient, create_rag_config
+    from src.rag.agent import RAGClient, create_rag_config
 
     rag_config = create_rag_config(cfg)
     client = RAGClient(rag_config)
@@ -291,7 +291,7 @@ def rag_stats() -> None:
     """Show vectorstore statistics."""
     cfg = config
 
-    from voice_ai.rag.agent import RAGClient, create_rag_config
+    from src.rag.agent import RAGClient, create_rag_config
 
     rag_config = create_rag_config(cfg)
     client = RAGClient(rag_config)
@@ -306,7 +306,7 @@ def rag_clear() -> None:
     """Clear the vectorstore."""
     cfg = config
 
-    from voice_ai.rag.agent import RAGClient, create_rag_config
+    from src.rag.agent import RAGClient, create_rag_config
 
     rag_config = create_rag_config(cfg)
     client = RAGClient(rag_config)

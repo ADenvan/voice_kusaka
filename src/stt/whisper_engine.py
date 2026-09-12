@@ -3,8 +3,8 @@ import logging
 
 import numpy as np
 
-from voice_ai.core.config import Config
-from voice_ai.core.exceptions import EmptyTranscriptionError, STTError
+from src.core.config import Config
+from src.core.exceptions import EmptyTranscriptionError, STTError
 
 logger = logging.getLogger("voice_ai.stt")
 

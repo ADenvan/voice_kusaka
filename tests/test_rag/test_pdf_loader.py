@@ -4,7 +4,7 @@ import tempfile
 import pytest
 from langchain_core.documents import Document
 
-from voice_ai.rag.pdf_loader import PDFDocumentLoader
+from src.rag.pdf_loader import PDFDocumentLoader
 
 
 def test_has_pdf_files_empty_dir() -> None:

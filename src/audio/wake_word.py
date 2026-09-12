@@ -5,8 +5,8 @@ from difflib import SequenceMatcher
 
 import numpy as np
 
-from voice_ai.core.config import Config
-from voice_ai.core.exceptions import WakeWordError
+from src.core.config import Config
+from src.core.exceptions import WakeWordError
 
 logger = logging.getLogger("voice_ai.audio.wake_word")
 

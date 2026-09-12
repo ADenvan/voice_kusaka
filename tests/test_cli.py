@@ -1,6 +1,6 @@
 from typer.testing import CliRunner
 
-from voice_ai.cli.app import app
+from src.cli.app import app
 
 runner = CliRunner()
 

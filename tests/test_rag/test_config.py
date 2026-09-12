@@ -1,4 +1,4 @@
-from voice_ai.rag.config import RAGConfig
+from src.rag.config import RAGConfig
 
 
 def test_rag_config_defaults() -> None:

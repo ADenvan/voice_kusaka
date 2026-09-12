@@ -1,11 +1,11 @@
 
 import pytest
 
-from voice_ai.core.config import Config
-from voice_ai.core.exceptions import LLMConnectionError
-from voice_ai.llm.lmstudio_client import LMStudioClient, check_lmstudio_health
-from voice_ai.llm.ollama_client import OllamaClient, check_ollama_health
-from voice_ai.llm.prompt_builder import SYSTEM_PROMPT, PromptBuilder
+from src.core.config import Config
+from src.core.exceptions import LLMConnectionError
+from src.llm.lmstudio_client import LMStudioClient, check_lmstudio_health
+from src.llm.ollama_client import OllamaClient, check_ollama_health
+from src.llm.prompt_builder import SYSTEM_PROMPT, PromptBuilder
 
 
 @pytest.fixture
@@ -13,7 +13,7 @@ def config() -> Config:
     return Config(
         _env_file=None,
         db_path=":memory:",
-        ollama_base_url="http://localhost:54321",
+        ollama_base_url="http://localhost:99999",
         ollama_timeout=3,
     )
 

@@ -3,8 +3,8 @@ import os
 import numpy as np
 import pytest
 
-from voice_ai.core.config import Config
-from voice_ai.tts.silero_engine import (
+from src.core.config import Config
+from src.tts.silero_engine import (
     BilingualSileroTTSEngine,
     SileroTTSEngine,
     _clean_text_for_tts,

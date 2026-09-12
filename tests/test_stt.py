@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from voice_ai.core.exceptions import EmptyTranscriptionError, STTError
-from voice_ai.stt.whisper_engine import FasterWhisperEngine
+from src.core.exceptions import EmptyTranscriptionError, STTError
+from src.stt.whisper_engine import FasterWhisperEngine
 
 
 class _FakeSegment:
@@ -22,7 +22,7 @@ class _FakeWhisperModel:
 
 @pytest.fixture
 def engine_with_mock(tmp_path: object) -> FasterWhisperEngine:
-    from voice_ai.core.config import Config
+    from src.core.config import Config
 
     config = Config(
         _env_file=None,

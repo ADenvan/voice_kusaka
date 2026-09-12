@@ -3,10 +3,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import numpy as np
 import pytest
 
-from voice_ai.audio.wake_word import STTWakeWord
-from voice_ai.core.config import Config
-from voice_ai.core.pipeline import Pipeline
-from voice_ai.core.protocols import PipelineState
+from src.audio.wake_word import STTWakeWord
+from src.core.config import Config
+from src.core.pipeline import Pipeline
+from src.core.protocols import PipelineState
 
 
 @pytest.fixture
@@ -111,7 +111,7 @@ class TestPipelineListenAndProcess:
 
     @pytest.mark.asyncio
     async def test_empty_transcription_returns_none(self, mock_pipeline: Pipeline) -> None:
-        from voice_ai.core.exceptions import EmptyTranscriptionError
+        from src.core.exceptions import EmptyTranscriptionError
 
         audio = np.ones(16000, dtype=np.float32)
         mock_pipeline.audio_in.record_utterance = AsyncMock(return_value=audio)

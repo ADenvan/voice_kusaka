@@ -1,6 +1,6 @@
 import pytest
 
-from voice_ai.tts.language_detector import detect_language, segment_by_language
+from src.tts.language_detector import detect_language, segment_by_language
 
 
 class TestDetectLanguage:

@@ -3,9 +3,9 @@ import asyncio
 import numpy as np
 import pytest
 
-from voice_ai.core.config import Config
-from voice_ai.core.pipeline import Pipeline
-from voice_ai.memory.database import SQLiteStore
+from src.core.config import Config
+from src.core.pipeline import Pipeline
+from src.memory.database import SQLiteStore
 
 
 @pytest.fixture

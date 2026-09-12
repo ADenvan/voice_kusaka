@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 import numpy as np
 import pytest
 
-from voice_ai.core.config import Config
+from src.core.config import Config
 
 
 @pytest.fixture
