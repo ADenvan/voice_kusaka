@@ -8,8 +8,7 @@ from src.core.config import Config, config
 from src.core.logging_config import setup_logging
 from src.core.pipeline import create_pipeline
 from src.core.protocols import LLMClient
-from src.llm.lmstudio_client import LMStudioClient, check_lmstudio_health
-from src.llm.ollama_client import OllamaClient, check_ollama_health
+from src.llm.unified_client import UnifiedLLMClient, check_llm_health
 from src.memory.database import SQLiteStore
 
 app = typer.Typer(name="voice_ai", help="Local Russian voice AI assistant")
@@ -17,17 +16,7 @@ app = typer.Typer(name="voice_ai", help="Local Russian voice AI assistant")
 
 def get_llm_client(cfg: Config) -> LLMClient:
     """Get LLM client based on provider configuration."""
-    if cfg.llm_provider == "lmstudio":
-        return LMStudioClient(cfg)
-    return OllamaClient(cfg)
-
-
-async def check_llm_health(cfg: Config) -> None:
-    """Check LLM provider health based on configuration."""
-    if cfg.llm_provider == "lmstudio":
-        await check_lmstudio_health(cfg)
-    else:
-        await check_ollama_health(cfg)
+    return UnifiedLLMClient(cfg)
 
 
 @app.command()
@@ -43,17 +32,18 @@ def run(
     """Start voice assistant pipeline."""
     overrides = {}
     if model:
-        if provider == "lmstudio":
-            overrides["lmstudio_model"] = model
-        elif provider == "ollama":
-            overrides["ollama_model"] = model
-        else:
-            overrides["ollama_model"] = model
+        overrides["llm_model"] = model
     if provider:
         if provider not in ("ollama", "lmstudio"):
             print(f"Error: provider must be 'ollama' or 'lmstudio', got '{provider}'")
             raise typer.Exit(code=1)
         overrides["llm_provider"] = provider
+        if provider == "ollama":
+            overrides["llm_base_url"] = "http://localhost:11434"
+            overrides["llm_api_key"] = "ollama"
+        else:
+            overrides["llm_base_url"] = "http://localhost:1234/v1"
+            overrides["llm_api_key"] = "lm-studio"
     if whisper:
         overrides["whisper_model"] = whisper
     if device:
@@ -77,10 +67,7 @@ def run(
 
     logger.info("Starting voice_ai pipeline (mode=%s)", cfg.activation_mode)
     logger.info("  LLM provider: %s", cfg.llm_provider)
-    if cfg.llm_provider == "lmstudio":
-        logger.info("  LM Studio model: %s", cfg.lmstudio_model)
-    else:
-        logger.info("  Ollama model: %s", cfg.ollama_model)
+    logger.info("  LLM model: %s", cfg.llm_model)
     logger.info("  Whisper model: %s (%s)", cfg.whisper_model, cfg.whisper_device)
     if cfg.activation_mode in ("wake_word", "continuous"):
         logger.info("  Wake word model: %s (%s)", cfg.wake_word_model, cfg.wake_word_device)
@@ -111,17 +98,18 @@ def chat(
     """Text-only chat mode (no microphone/speakers)."""
     overrides = {}
     if model:
-        if provider == "lmstudio":
-            overrides["lmstudio_model"] = model
-        elif provider == "ollama":
-            overrides["ollama_model"] = model
-        else:
-            overrides["ollama_model"] = model
+        overrides["llm_model"] = model
     if provider:
         if provider not in ("ollama", "lmstudio"):
             print(f"Error: provider must be 'ollama' or 'lmstudio', got '{provider}'")
             raise typer.Exit(code=1)
         overrides["llm_provider"] = provider
+        if provider == "ollama":
+            overrides["llm_base_url"] = "http://localhost:11434"
+            overrides["llm_api_key"] = "ollama"
+        else:
+            overrides["llm_base_url"] = "http://localhost:1234/v1"
+            overrides["llm_api_key"] = "lm-studio"
 
     cfg = Config(_env_file=None, **overrides) if overrides else config
     setup_logging(cfg.log_level)
@@ -179,6 +167,12 @@ def models(
             print(f"Error: provider must be 'ollama' or 'lmstudio', got '{provider}'")
             raise typer.Exit(code=1)
         overrides["llm_provider"] = provider
+        if provider == "ollama":
+            overrides["llm_base_url"] = "http://localhost:11434"
+            overrides["llm_api_key"] = "ollama"
+        else:
+            overrides["llm_base_url"] = "http://localhost:1234/v1"
+            overrides["llm_api_key"] = "lm-studio"
 
     cfg = Config(_env_file=None, **overrides) if overrides else config
 
@@ -213,38 +207,36 @@ def show_config() -> None:
     cfg = config
     print(f"  activation_mode:    {cfg.activation_mode}")
     print(f"  llm_provider:       {cfg.llm_provider}")
-    print(f"  tts_language:        {cfg.tts_language}")
-    print(f"  sample_rate:         {cfg.sample_rate}")
-    print(f"  chunk_duration_ms:   {cfg.chunk_duration_ms}")
-    print(f"  vad_threshold:       {cfg.vad_threshold}")
-    print(f"  whisper_model:       {cfg.whisper_model}")
-    print(f"  whisper_device:      {cfg.whisper_device}")
-    print(f"  whisper_compute:      {cfg.whisper_compute_type}")
-    print(f"  ollama_base_url:     {cfg.ollama_base_url}")
-    print(f"  ollama_model:        {cfg.ollama_model}")
-    print(f"  ollama_timeout:      {cfg.ollama_timeout}")
-    print(f"  ollama_temperature:  {cfg.ollama_temperature}")
-    print(f"  lmstudio_base_url:   {cfg.lmstudio_base_url}")
-    print(f"  lmstudio_model:      {cfg.lmstudio_model}")
-    print(f"  lmstudio_timeout:    {cfg.lmstudio_timeout}")
-    print(f"  lmstudio_temperature:{cfg.lmstudio_temperature}")
-    print(f"  silero_language:     {cfg.silero_language}")
-    print(f"  silero_speaker:      {cfg.silero_speaker}")
-    print(f"  wake_word_model:     {cfg.wake_word_model}")
-    print(f"  wake_word_device:    {cfg.wake_word_device}")
-    print(f"  wake_word_phrases:   {cfg.wake_word_phrases}")
-    print(f"  wake_word_cooldown:  {cfg.wake_word_cooldown_s}s")
-    print(f"  wake_word_threshold: {cfg.wake_word_match_threshold}")
-    print(f"  output_device:       {cfg.output_device}")
-    print(f"  db_path:             {cfg.db_path}")
-    print(f"  history_limit:       {cfg.history_limit}")
-    print(f"  rag_pdf_directory:   {cfg.rag_pdf_directory}")
-    print(f"  rag_chroma_dir:      {cfg.rag_chroma_dir}")
-    print(f"  rag_embedding_model: {cfg.rag_embedding_model}")
-    print(f"  rag_chunk_size:      {cfg.rag_chunk_size}")
-    print(f"  rag_retriever_k:     {cfg.rag_retriever_k}")
-    print(f"  rag_use_web_search:  {cfg.rag_use_web_search}")
-    print(f"  log_level:           {cfg.log_level}")
+    print(f"  llm_base_url:       {cfg.llm_base_url}")
+    print(f"  llm_model:          {cfg.llm_model}")
+    print(f"  llm_api_key:        {cfg.llm_api_key}")
+    print(f"  llm_temperature:    {cfg.llm_temperature}")
+    print(f"  llm_timeout:        {cfg.llm_timeout}")
+    print(f"  llm_max_tokens:     {cfg.llm_max_tokens}")
+    print(f"  tts_language:       {cfg.tts_language}")
+    print(f"  sample_rate:        {cfg.sample_rate}")
+    print(f"  chunk_duration_ms:  {cfg.chunk_duration_ms}")
+    print(f"  vad_threshold:      {cfg.vad_threshold}")
+    print(f"  whisper_model:      {cfg.whisper_model}")
+    print(f"  whisper_device:     {cfg.whisper_device}")
+    print(f"  whisper_compute:    {cfg.whisper_compute_type}")
+    print(f"  silero_language:    {cfg.silero_language}")
+    print(f"  silero_speaker:     {cfg.silero_speaker}")
+    print(f"  wake_word_model:    {cfg.wake_word_model}")
+    print(f"  wake_word_device:   {cfg.wake_word_device}")
+    print(f"  wake_word_phrases:  {cfg.wake_word_phrases}")
+    print(f"  wake_word_cooldown: {cfg.wake_word_cooldown_s}s")
+    print(f"  wake_word_threshold:{cfg.wake_word_match_threshold}")
+    print(f"  output_device:      {cfg.output_device}")
+    print(f"  db_path:            {cfg.db_path}")
+    print(f"  history_limit:      {cfg.history_limit}")
+    print(f"  rag_pdf_directory:  {cfg.rag_pdf_directory}")
+    print(f"  rag_chroma_dir:     {cfg.rag_chroma_dir}")
+    print(f"  rag_embedding_model:{cfg.rag_embedding_model}")
+    print(f"  rag_chunk_size:     {cfg.rag_chunk_size}")
+    print(f"  rag_retriever_k:    {cfg.rag_retriever_k}")
+    print(f"  rag_use_web_search: {cfg.rag_use_web_search}")
+    print(f"  log_level:          {cfg.log_level}")
 
 
 @app.command()

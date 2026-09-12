@@ -140,15 +140,6 @@ class RAGClient:
 
 def create_rag_config(config: Config) -> RAGConfig:
     """Create RAGConfig from main Config."""
-    if config.llm_provider == "lmstudio":
-        llm_base_url = config.lmstudio_base_url
-        llm_model = config.lmstudio_model
-        llm_api_key = config.lmstudio_api_key
-    else:
-        llm_base_url = config.ollama_base_url
-        llm_model = config.ollama_model
-        llm_api_key = "ollama"
-
     return RAGConfig(
         pdf_directory=config.rag_pdf_directory,
         chroma_persist_dir=config.rag_chroma_dir,
@@ -160,8 +151,8 @@ def create_rag_config(config: Config) -> RAGConfig:
         max_retries=config.rag_max_retries,
         use_web_search=config.rag_use_web_search,
         llm_provider=config.llm_provider,
-        llm_base_url=llm_base_url,
-        llm_model=llm_model,
-        llm_api_key=llm_api_key,
+        llm_base_url=config.llm_base_url,
+        llm_model=config.llm_model,
+        llm_api_key=config.llm_api_key,
         llm_temperature=config.rag_llm_temperature,
     )

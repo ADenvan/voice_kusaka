@@ -9,7 +9,7 @@ def test_show_config() -> None:
     result = runner.invoke(app, ["show-config"])
     assert result.exit_code == 0
     assert "whisper_model" in result.output
-    assert "ollama_model" in result.output
+    assert "llm_model" in result.output
 
 
 def test_models_command_fails_gracefully() -> None:

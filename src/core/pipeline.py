@@ -23,9 +23,8 @@ from src.core.protocols import (
     TurnResult,
     WakeWordDetector,
 )
-from src.llm.lmstudio_client import LMStudioClient
-from src.llm.ollama_client import OllamaClient
 from src.llm.prompt_builder import PromptBuilder
+from src.llm.unified_client import UnifiedLLMClient
 from src.memory.context import ContextManager
 from src.memory.database import SQLiteStore
 from src.stt.whisper_engine import FasterWhisperEngine
@@ -96,7 +95,10 @@ class Pipeline:
             elif self._activation_mode in ("wake_word", "continuous"):
                 await self._run_continuous_mode()
             else:
-                logger.warning("Unknown activation mode: %s, falling back to button", self._activation_mode)
+                logger.warning(
+                    "Unknown activation mode: %s, falling back to button",
+                    self._activation_mode,
+                )
                 await self._run_button_mode()
         except asyncio.CancelledError:
             logger.info("Pipeline cancelled")
@@ -213,8 +215,12 @@ class Pipeline:
         audio_response = await self.tts.synthesize(response)
 
         if audio_response is None:
-            logger.warning("TTS returned None for response (%d chars): %.80s%s — falling back to text-only",
-                           len(response), response, "..." if len(response) > 80 else "")
+            logger.warning(
+                "TTS returned None for response (%d chars): %.80s%s — falling back to text-only",
+                len(response),
+                response,
+                "..." if len(response) > 80 else "",
+            )
         else:
             logger.info("TTS: got audio response shape=%s dtype=%s len=%d duration=%.2fs",
                         audio_response.shape, audio_response.dtype, len(audio_response),
@@ -223,7 +229,10 @@ class Pipeline:
         interrupted = self.interrupt_event.is_set()
 
         if audio_response is not None and not interrupted:
-            logger.info("Playing audio response through speakers at %d Hz", self.config.silero_sample_rate)
+            logger.info(
+                "Playing audio response through speakers at %d Hz",
+                self.config.silero_sample_rate,
+            )
             await self.audio_out.play(
                 audio_response, sample_rate=self.config.silero_sample_rate
             )
@@ -271,10 +280,8 @@ def create_pipeline(config: Config) -> Pipeline:
         rag_config = create_rag_config(config)
         llm: LLMClient = RAGClient(rag_config)
         logger.info("RAG enabled: found PDF files in %s", config.rag_pdf_directory)
-    elif config.llm_provider == "lmstudio":
-        llm = LMStudioClient(config)
     else:
-        llm = OllamaClient(config)
+        llm = UnifiedLLMClient(config)
 
     tts = BilingualSileroTTSEngine(config)
     memory = SQLiteStore(config)

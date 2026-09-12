@@ -54,36 +54,66 @@ python -c "import sounddevice as sd; print(sd.query_devices())"
 OUTPUT_DEVICE=18 #
 ```
 
-### 5. Run
+### Run Text mode (no microphone)
 ```bash
-python -m src.cli.app run # Использовать провайдер из .env (LLM_PROVIDER=ollama)
+# Использовать провайдер из .env (LLM_PROVIDER=ollama)
+python -m src.cli.app run
+
+python -m src.cli.app run --lang en # Английский
+
+```
+
+### Run ollama: provider
+```bash
+# Ollama
+python -m src.cli.app run --provider ollama
+python -m src.cli.app chat --provider ollama
+
 python -m src.cli.app run --log-level DEBUG
 python -m src.cli.app run --mode button     # Enter для активации
 python -m src.cli.app run --mode wake_word  # Активация по фразе "войс ай"
 python -m src.cli.app run --mode continuous # Реагировать на любую речь
 
-python -m src.cli.app run --lang en # Английский
+
 ```
 
-### Text mode (no microphone)
-```bash
-# Использовать провайдер из .env (LLM_PROVIDER=ollama)
-python -m src.cli.app chat
-```
 
-# Теперь для теста чата с LM Studio:
+### Run LM Studio: provider
 ```bash
-# Вариант 1: Использовать провайдер из .env (LLM_PROVIDER=lmstudio)
-python -m src.cli.app chat
-
-# Вариант 2: Явно указать провайдер
+# LM Studio
+python -m src.cli.app run --provider lmstudio
 python -m src.cli.app chat --provider lmstudio
 
-# Вариант 3: Указать провайдер и модель
+# Явно указать провайдер
+python -m src.cli.app chat --provider lmstudio
+
+# Указать провайдер и модель
 python -m src.cli.app chat --provider lmstudio --model qwen2.5-coder-7b-instruct
+
+# С режимами по нажатию кнопки
+python -m src.cli.app run --provider lmstudio --mode button --model qwen2.5-coder-7b-instruct
+
+# Реагировать на любую речь
+python -m src.cli.app run --provider lmstudio --mode continuous --model qwen2.5-coder-7b-instruct
+
+# Активация по фразе "войс ай"
+python -m src.cli.app run --provider lmstudio --mode wake_word --model qwen2.5-coder-7b-instruct
+```
+
+
+## Show list + config + DEBUG
+```bash
+# Не внятные команды
+python -m src.cli.app --help
+
 # Показать текущую конфигурацию
 python -m src.cli.app show-config
 
+
+```
+
+## List models LLM
+```bash
 # Список моделей из активного провайдера
 python -m src.cli.app models
 
@@ -91,13 +121,13 @@ python -m src.cli.app models
 python -m src.cli.app models --provider ollama
 python -m src.cli.app models --provider lmstudio
 
-# Голосовой ассистент с LM Studio
-python -m src.cli.app run --provider lmstudio
 ```
-
 
 ### Diagnostics
 ```bash
+# DEBUG
+python -m src.cli.app run --log-level DEBUG
+
 python scripts/test_mic.py
 python scripts/test_audio_output.py
 python scripts/test_tts.py
