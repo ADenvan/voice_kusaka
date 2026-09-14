@@ -1,10 +1,7 @@
-import logging
-
 import numpy as np
+from loguru import logger
 
 from src.core.config import Config
-
-logger = logging.getLogger("voice_ai.audio.vad")
 
 
 class SileroVAD:
@@ -55,7 +52,7 @@ class SileroVAD:
         probs = self._compute_probs(chunk)
         result = max(probs) >= self._threshold
         logger.debug(
-            "VAD: max_prob=%.3f threshold=%.3f speech=%s samples=%d",
+            "VAD: max_prob={:.3f} threshold={:.3f} speech={} samples={}",
             max(probs), self._threshold, result, len(chunk),
         )
         return result

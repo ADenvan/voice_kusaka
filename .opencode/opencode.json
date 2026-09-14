@@ -10,7 +10,9 @@
     "skills/python-best-practices/SKILL.md",
     "skills/pyside6-ui-best-practices/SKILL.md",
     "skills/voice-assistant-architect/SKILL.md",
-    "skills/debugger/SKILL.md"
+    "skills/debugger/SKILL.md",
+    "skills/langchain-architecture/SKILL.md",
+    "skills/langgraph/SKILL.md"
 
 
   ],

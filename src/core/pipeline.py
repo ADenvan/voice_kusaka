@@ -1,9 +1,9 @@
 import asyncio
-import logging
 import time
 from typing import NoReturn
 
 import numpy as np
+from loguru import logger
 
 from src.audio.input import SoundDeviceInput
 from src.audio.output import SoundDeviceOutput
@@ -29,8 +29,6 @@ from src.memory.context import ContextManager
 from src.memory.database import SQLiteStore
 from src.stt.whisper_engine import FasterWhisperEngine
 from src.tts.silero_engine import BilingualSileroTTSEngine
-
-logger = logging.getLogger("voice_ai.pipeline")
 
 
 class Pipeline:
@@ -65,9 +63,9 @@ class Pipeline:
         self._activation_mode = config.activation_mode
 
     async def run(self) -> NoReturn:
-        logger.info("Pipeline starting (mode=%s)", self._activation_mode)
+        logger.info("Pipeline starting (mode={})", self._activation_mode)
         self.session_id = await self.memory.create_session()
-        logger.info("Session created: %s", self.session_id)
+        logger.info("Session created: {}", self.session_id)
 
         if hasattr(self.vad, "load"):
             logger.info("Pre-loading VAD model...")
@@ -111,13 +109,13 @@ class Pipeline:
             result = await self._listen_and_process()
             if result:
                 logger.info(
-                    "Turn complete: latency=%dms interrupted=%s",
+                    "Turn complete: latency={}ms interrupted={}",
                     result.latency_ms, result.interrupted,
                 )
 
     async def _run_continuous_mode(self) -> None:
         use_wake_word = self._activation_mode == "wake_word" and self.wake_word is not None
-        logger.info("Continuous mode: wake_word=%s", use_wake_word)
+        logger.info("Continuous mode: wake_word={}", use_wake_word)
 
         if not isinstance(self.audio_in, SoundDeviceInput):
             logger.error("Continuous mode requires SoundDeviceInput")
@@ -133,7 +131,7 @@ class Pipeline:
             result = await self._process_audio(audio)
             if result:
                 logger.info(
-                    "Turn complete: latency=%dms interrupted=%s",
+                    "Turn complete: latency={}ms interrupted={}",
                     result.latency_ms, result.interrupted,
                 )
 
@@ -162,18 +160,18 @@ class Pipeline:
     async def _process_audio(self, audio: np.ndarray) -> TurnResult | None:
         start_time = time.monotonic()
         duration = len(audio) / self.config.sample_rate
-        logger.info("Processing audio: %.1fs", duration)
+        logger.info("Processing audio: {:.1f}s", duration)
 
         self.state = PipelineState.PROCESSING_STT
         try:
             text = await self.stt.transcribe(audio)
-            logger.info("Transcription: %r", text)
+            logger.info("Transcription: {!r}", text)
         except EmptyTranscriptionError:
             logger.info("Empty transcription, skipping")
             self.state = PipelineState.IDLE
             return None
         except Exception as e:
-            logger.error("STT error: %s", e)
+            logger.error("STT error: {}", e)
             self.state = PipelineState.IDLE
             return None
 
@@ -195,34 +193,34 @@ class Pipeline:
                     logger.info("Interrupted during LLM generation")
                     break
         except Exception as e:
-            logger.error("LLM error: %s", e)
+            logger.error("LLM error: {}", e)
             response_parts.append("Извините, произошла ошибка. Попробуйте ещё раз.")
 
-        response = "".join(response_parts)
-        if not response.strip():
-            self.state = PipelineState.IDLE
-            return None
+        response = "".join(response_parts).strip()
+        if not response:
+            logger.warning("LLM returned empty response, using fallback")
+            response = "Извините, я не смог получить ответ. Попробуйте переформулировать вопрос."
 
-        logger.info("Assistant: %s", response.strip())
-        print(f"\n🤖 {response.strip()}\n")
+        logger.info("Assistant: {}", response)
+        print(f"\n🤖 {response}\n")
 
         await self.memory.save_message(
             session_id=self.session_id, role="assistant", content=response
         )
 
         self.state = PipelineState.SPEAKING
-        logger.info("TTS: synthesizing response (%d chars)", len(response))
+        logger.info("TTS: synthesizing response ({} chars)", len(response))
         audio_response = await self.tts.synthesize(response)
 
         if audio_response is None:
             logger.warning(
-                "TTS returned None for response (%d chars): %.80s%s — falling back to text-only",
+                "TTS returned None for response ({} chars): {:.80s}{} — falling back to text-only",
                 len(response),
                 response,
                 "..." if len(response) > 80 else "",
             )
         else:
-            logger.info("TTS: got audio response shape=%s dtype=%s len=%d duration=%.2fs",
+            logger.info("TTS: got audio response shape={} dtype={} len={} duration={:.2f}s",
                         audio_response.shape, audio_response.dtype, len(audio_response),
                         len(audio_response) / self.config.silero_sample_rate)
 
@@ -230,7 +228,7 @@ class Pipeline:
 
         if audio_response is not None and not interrupted:
             logger.info(
-                "Playing audio response through speakers at %d Hz",
+                "Playing audio response through speakers at {} Hz",
                 self.config.silero_sample_rate,
             )
             await self.audio_out.play(
@@ -279,7 +277,7 @@ def create_pipeline(config: Config) -> Pipeline:
 
         rag_config = create_rag_config(config)
         llm: LLMClient = RAGClient(rag_config)
-        logger.info("RAG enabled: found PDF files in %s", config.rag_pdf_directory)
+        logger.info("RAG enabled: found PDF files in {}", config.rag_pdf_directory)
     else:
         llm = UnifiedLLMClient(config)
 

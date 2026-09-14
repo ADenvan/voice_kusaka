@@ -1,30 +1,25 @@
-import logging
-import os
-from logging.handlers import RotatingFileHandler
+import sys
+
+from loguru import logger
 
 
 def setup_logging(level: str = "INFO") -> None:
-    log_dir = "logs"
-    os.makedirs(log_dir, exist_ok=True)
+    """Configure loguru logging with file and console handlers."""
+    logger.remove()
 
-    formatter = logging.Formatter(
-        "%(asctime)s | %(name)s | %(levelname)s | %(message)s"
-    )
+    log_format = "{time:YYYY-MM-DD HH:mm:ss} | {name} | {level} | {message}"
 
-    file_handler = RotatingFileHandler(
-        f"{log_dir}/app.log",
-        maxBytes=10 * 1024 * 1024,
-        backupCount=5,
+    logger.add(
+        "logs/app.log",
+        rotation="10 MB",
+        retention=5,
         encoding="utf-8",
+        level="DEBUG",
+        format=log_format,
     )
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(logging.DEBUG)
 
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    console_handler.setLevel(getattr(logging, level.upper(), logging.INFO))
-
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
-    root_logger.addHandler(file_handler)
-    root_logger.addHandler(console_handler)
+    logger.add(
+        sys.stderr,
+        level=level.upper(),
+        format=log_format,
+    )

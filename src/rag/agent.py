@@ -1,9 +1,9 @@
 import asyncio
-import logging
 from collections.abc import AsyncIterator
 from typing import Any
 
 from langchain_openai import ChatOpenAI
+from loguru import logger
 from pydantic import SecretStr
 
 from src.core.config import Config
@@ -12,10 +12,8 @@ from src.rag.config import RAGConfig
 from src.rag.embeddings import EmbeddingProvider
 from src.rag.graph import RAGGraphBuilder
 from src.rag.pdf_loader import PDFDocumentLoader
-from src.rag.vectorstore import ChromaVectorStore
+from src.rag.vectorstore import FaissVectorStore
 from src.rag.web_search import DuckDuckGoSearchTool
-
-logger = logging.getLogger("voice_ai.rag.agent")
 
 
 class RAGClient:
@@ -28,12 +26,15 @@ class RAGClient:
             rag_config.embedding_device,
         )
         embeddings = self._embedding_provider.get_embeddings()
-        self._vectorstore = ChromaVectorStore(
-            rag_config.chroma_persist_dir,
+        self._vectorstore = FaissVectorStore(
+            rag_config.faiss_index_dir,
             embeddings,
         )
         self._web_search_tool = DuckDuckGoSearchTool()
         self._llm = self._create_llm()
+
+        self._ensure_index_built()
+
         self._graph = RAGGraphBuilder(
             self._llm,
             self._vectorstore.as_retriever(rag_config.retriever_k),
@@ -41,9 +42,10 @@ class RAGClient:
             rag_config.use_web_search,
         ).build()
         logger.info(
-            "RAGClient initialized (model=%s, pdf_dir=%s)",
+            "RAGClient initialized (model={}, pdf_dir={}, faiss_index={})",
             rag_config.llm_model,
             rag_config.pdf_directory,
+            rag_config.faiss_index_dir,
         )
 
     def _create_llm(self) -> ChatOpenAI:
@@ -63,6 +65,29 @@ class RAGClient:
             temperature=cfg.llm_temperature,
         )
 
+    def _ensure_index_built(self) -> None:
+        """Load existing FAISS index or build one from PDFs."""
+        if self._vectorstore.is_index_present():
+            logger.info("FAISS index found at {}", self._config.faiss_index_dir)
+            stats = self._vectorstore.get_stats()
+            logger.info("FAISS index stats: {}", stats)
+            return
+
+        logger.warning(
+            "FAISS index not found at {}. Building from PDFs in {}...",
+            self._config.faiss_index_dir,
+            self._config.pdf_directory,
+        )
+        loader = PDFDocumentLoader(
+            self._config.chunk_size,
+            self._config.chunk_overlap,
+        )
+        documents = loader.process_directory(self._config.pdf_directory)
+        if documents:
+            self._vectorstore.build_from_documents(documents)
+        else:
+            logger.warning("No PDF documents found in {}", self._config.pdf_directory)
+
     async def chat(self, messages: list[dict[str, str]]) -> str:
         """Get complete answer from RAG agent."""
         question = self._extract_question(messages)
@@ -71,16 +96,19 @@ class RAGClient:
 
         inputs = {
             "question": question,
-            "max_retries": self._config.max_retries,
-            "loop_step": 0,
             "documents": [],
             "generation": "",
-            "web_search": "No",
         }
 
         try:
-            result = await asyncio.to_thread(self._run_graph, inputs)
+            result = await asyncio.wait_for(
+                asyncio.to_thread(self._run_graph, inputs),
+                timeout=60.0,
+            )
             return result
+        except TimeoutError:
+            logger.error("RAG graph timed out after 60s")
+            return "Ответ занял слишком много времени. Попробуйте ещё раз."
         except Exception as e:
             error_str = str(e).lower()
             if "connection" in error_str or "connect" in error_str:
@@ -89,7 +117,7 @@ class RAGClient:
                 ) from e
             if "timeout" in error_str:
                 raise LLMTimeoutError("LLM timed out") from e
-            logger.error("RAG graph error: %s", e)
+            logger.error("RAG graph error: {}", e)
             return "Произошла ошибка при обработке запроса."
 
     async def chat_stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
@@ -98,7 +126,7 @@ class RAGClient:
         yield result
 
     def scan_pdf_directory(self, directory: str | None = None) -> int:
-        """Scan PDF directory and update vectorstore."""
+        """Scan PDF directory and rebuild the FAISS index."""
         dir_to_scan = directory or self._config.pdf_directory
         loader = PDFDocumentLoader(
             self._config.chunk_size,
@@ -106,11 +134,10 @@ class RAGClient:
         )
         documents = loader.process_directory(dir_to_scan)
         if not documents:
-            logger.warning("No documents found in %s", dir_to_scan)
+            logger.warning("No documents found in {}", dir_to_scan)
             return 0
 
-        self._vectorstore.clear()
-        return self._vectorstore.add_documents(documents)
+        return self._vectorstore.build_from_documents(documents)
 
     def get_stats(self) -> dict[str, int | str]:
         """Get vectorstore statistics."""
@@ -129,12 +156,21 @@ class RAGClient:
 
     def _run_graph(self, inputs: dict[str, Any]) -> str:
         """Run the graph synchronously (to be called via asyncio.to_thread)."""
+        logger.info("RAG graph started for question: {}", inputs.get("question"))
+        final_answer = ""
         for event in self._graph.stream(inputs, stream_mode="values"):
-            if "generation" in event:
-                gen = event["generation"]
-                if hasattr(gen, "content"):
-                    return str(gen.content)
-                return str(gen)
+            gen = event.get("generation")
+            if gen is None:
+                continue
+            content = str(gen.content) if hasattr(gen, "content") else str(gen)
+            if content.strip():
+                final_answer = content
+                logger.info("RAG graph produced answer ({} chars)", len(content))
+
+        if final_answer:
+            return final_answer
+
+        logger.warning("RAG graph finished without generation")
         return "Не удалось получить ответ."
 
 
@@ -142,7 +178,7 @@ def create_rag_config(config: Config) -> RAGConfig:
     """Create RAGConfig from main Config."""
     return RAGConfig(
         pdf_directory=config.rag_pdf_directory,
-        chroma_persist_dir=config.rag_chroma_dir,
+        faiss_index_dir=config.rag_faiss_dir,
         embedding_model=config.rag_embedding_model,
         embedding_device=config.rag_embedding_device,
         chunk_size=config.rag_chunk_size,

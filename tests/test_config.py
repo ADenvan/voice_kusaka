@@ -10,7 +10,7 @@ def test_config_defaults() -> None:
     )
     assert c.sample_rate == 16000
     assert c.whisper_model == "large-v3"
-    assert c.llm_model == "qwen2.5:7b"
+    assert c.llm_model == "qwen2.5-coder-7b-instruct"
     assert c.silero_language == "ru"
     assert c.silero_speaker == "v5_ru"
     assert c.silero_voice == "baya"
@@ -55,7 +55,7 @@ def test_config_extra_fields_ignored(tmp_path: object) -> None:
 
 def test_config_llm_provider_default() -> None:
     c = Config(_env_file=None, db_path=":memory:")
-    assert c.llm_provider == "ollama"
+    assert c.llm_provider == "lmstudio"
 
 
 def test_config_llm_provider_lmstudio() -> None:
@@ -65,9 +65,9 @@ def test_config_llm_provider_lmstudio() -> None:
 
 def test_config_llm_base_url_default() -> None:
     c = Config(_env_file=None, db_path=":memory:")
-    assert c.llm_base_url == "http://localhost:11434"
+    assert c.llm_base_url == "http://localhost:1234/v1"
 
 
 def test_config_llm_api_key_default() -> None:
     c = Config(_env_file=None, db_path=":memory:")
-    assert c.llm_api_key == "ollama"
+    assert c.llm_api_key == "lmstudio"

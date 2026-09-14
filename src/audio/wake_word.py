@@ -1,14 +1,12 @@
 import asyncio
-import logging
 import time
 from difflib import SequenceMatcher
 
 import numpy as np
+from loguru import logger
 
 from src.core.config import Config
 from src.core.exceptions import WakeWordError
-
-logger = logging.getLogger("voice_ai.audio.wake_word")
 
 
 class STTWakeWord:
@@ -32,7 +30,7 @@ class STTWakeWord:
             from faster_whisper import WhisperModel
 
             logger.info(
-                "Loading wake word model: %s (device=%s, compute_type=%s)",
+                "Loading wake word model: {} (device={}, compute_type={})",
                 self._model_name, self._device, self._compute_type,
             )
             try:
@@ -56,24 +54,25 @@ class STTWakeWord:
     async def detect(self, audio: np.ndarray) -> bool:
         now = time.monotonic()
         if now - self._last_detection_time < self._cooldown_s:
-            logger.debug("Wake word: cooldown active (%.1fs left)", self._cooldown_s - (now - self._last_detection_time))
+            remaining = self._cooldown_s - (now - self._last_detection_time)
+            logger.debug("Wake word: cooldown active ({:.1f}s left)", remaining)
             return False
 
         try:
             text = await asyncio.to_thread(self._transcribe_sync, audio)
         except Exception as e:
-            logger.error("Wake word transcription error: %s", e)
+            logger.error("Wake word transcription error: {}", e)
             return False
 
         if not text:
             return False
 
-        logger.debug("Wake word heard: %r", text)
+        logger.debug("Wake word heard: {!r}", text)
 
         matched = self._fuzzy_match(text, self._phrases, self._threshold)
         if matched:
             self._last_detection_time = time.monotonic()
-            logger.info("Wake word detected! Heard: %r, matched phrase: %r", text, matched)
+            logger.info("Wake word detected! Heard: {!r}, matched phrase: {!r}", text, matched)
         return matched is not None
 
     @staticmethod

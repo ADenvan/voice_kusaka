@@ -1,12 +1,10 @@
 import asyncio
-import logging
 
 import numpy as np
+from loguru import logger
 
 from src.core.config import Config
 from src.core.exceptions import EmptyTranscriptionError, STTError
-
-logger = logging.getLogger("voice_ai.stt")
 
 
 class FasterWhisperEngine:
@@ -25,7 +23,7 @@ class FasterWhisperEngine:
             from faster_whisper import WhisperModel
 
             logger.info(
-                "Loading Whisper model: %s (device=%s, compute_type=%s)",
+                "Loading Whisper model: {} (device={}, compute_type={})",
                 self._model_name,
                 self._device,
                 self._compute_type,
@@ -54,5 +52,5 @@ class FasterWhisperEngine:
         if not text:
             raise EmptyTranscriptionError("STT returned empty result")
 
-        logger.info("Transcribed: %s (%d chars)", text[:50], len(text))
+        logger.info("Transcribed: {} ({} chars)", text[:50], len(text))
         return text

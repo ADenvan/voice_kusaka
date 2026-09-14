@@ -20,11 +20,15 @@ class Config(BaseSettings):
     whisper_device: str = "cuda"
     whisper_compute_type: str = "float16"
 
-    llm_provider: str = "ollama"
-    llm_base_url: str = "http://localhost:11434"
-    # llm_model: str = "qwen2.5-coder-7b-instruct"
-    llm_model: str = "qwen2.5:7b"
-    llm_api_key: str = "ollama"
+    llm_provider: str = "lmstudio"
+    llm_model: str = "qwen2.5-coder-7b-instruct"
+    llm_api_key: str = "lmstudio"
+    llm_base_url: str = "http://localhost:1234/v1"
+
+    # llm_provider: str = "ollama"
+    # llm_model: str = "qwen2.5:7b"
+    # llm_api_key: str = "ollama"
+    # llm_base_url: str = "http://localhost:11434"
     llm_temperature: float = 0.7
     llm_timeout: int = 60
     llm_max_tokens: int = 256
@@ -55,7 +59,7 @@ class Config(BaseSettings):
     history_limit: int = 50
 
     rag_pdf_directory: str = "data/pdf"
-    rag_chroma_dir: str = "data/chroma_db"
+    rag_faiss_dir: str = "data/faiss_index"
     rag_embedding_model: str = "intfloat/multilingual-e5-large"
     rag_embedding_device: str = "cpu"
     rag_chunk_size: int = 1024

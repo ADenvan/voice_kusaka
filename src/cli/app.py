@@ -1,8 +1,8 @@
 import asyncio
-import logging
 import sys
 
 import typer
+from loguru import logger
 
 from src.core.config import Config, config
 from src.core.logging_config import setup_logging
@@ -63,15 +63,14 @@ def run(
 
     cfg = Config(_env_file=None, **overrides) if overrides else config
     setup_logging(cfg.log_level)
-    logger = logging.getLogger("voice_ai")
 
-    logger.info("Starting voice_ai pipeline (mode=%s)", cfg.activation_mode)
-    logger.info("  LLM provider: %s", cfg.llm_provider)
-    logger.info("  LLM model: %s", cfg.llm_model)
-    logger.info("  Whisper model: %s (%s)", cfg.whisper_model, cfg.whisper_device)
+    logger.info("Starting voice_ai pipeline (mode={})", cfg.activation_mode)
+    logger.info("  LLM provider: {}", cfg.llm_provider)
+    logger.info("  LLM model: {}", cfg.llm_model)
+    logger.info("  Whisper model: {} ({})", cfg.whisper_model, cfg.whisper_device)
     if cfg.activation_mode in ("wake_word", "continuous"):
-        logger.info("  Wake word model: %s (%s)", cfg.wake_word_model, cfg.wake_word_device)
-        logger.info("  Wake word phrases: %s", cfg.wake_word_phrases)
+        logger.info("  Wake word model: {} ({})", cfg.wake_word_model, cfg.wake_word_device)
+        logger.info("  Wake word phrases: {}", cfg.wake_word_phrases)
 
     try:
         asyncio.run(_run_pipeline(cfg))
@@ -85,7 +84,7 @@ async def _run_pipeline(cfg: Config) -> None:
     try:
         await pipeline.run()
     except Exception as e:
-        logging.getLogger("voice_ai").error("Pipeline error: %s", e)
+        logger.error("Pipeline error: {}", e)
     finally:
         await pipeline.shutdown()
 
@@ -231,7 +230,7 @@ def show_config() -> None:
     print(f"  db_path:            {cfg.db_path}")
     print(f"  history_limit:      {cfg.history_limit}")
     print(f"  rag_pdf_directory:  {cfg.rag_pdf_directory}")
-    print(f"  rag_chroma_dir:     {cfg.rag_chroma_dir}")
+    print(f"  rag_faiss_dir:      {cfg.rag_faiss_dir}")
     print(f"  rag_embedding_model:{cfg.rag_embedding_model}")
     print(f"  rag_chunk_size:     {cfg.rag_chunk_size}")
     print(f"  rag_retriever_k:    {cfg.rag_retriever_k}")
@@ -263,9 +262,26 @@ def rag_scan(
 @app.command()
 def rag_query(
     question: str = typer.Argument(..., help="Question to ask"),
+    model: str = typer.Option(None, help="LLM model name"),
+    provider: str = typer.Option(None, help="LLM provider: ollama, lmstudio"),
 ) -> None:
     """Query the RAG agent (text mode)."""
-    cfg = config
+    overrides = {}
+    if model:
+        overrides["llm_model"] = model
+    if provider:
+        if provider not in ("ollama", "lmstudio"):
+            print(f"Error: provider must be 'ollama' or 'lmstudio', got '{provider}'")
+            raise typer.Exit(code=1)
+        overrides["llm_provider"] = provider
+        if provider == "ollama":
+            overrides["llm_base_url"] = "http://localhost:11434"
+            overrides["llm_api_key"] = "ollama"
+        else:
+            overrides["llm_base_url"] = "http://localhost:1234/v1"
+            overrides["llm_api_key"] = "lm-studio"
+
+    cfg = Config(_env_file=None, **overrides) if overrides else config
 
     from src.rag.agent import RAGClient, create_rag_config
 
@@ -290,7 +306,7 @@ def rag_stats() -> None:
 
     stats = client.get_stats()
     print(f"  Документов/чанков: {stats['document_count']}")
-    print(f"  Хранилище: {stats['persist_dir']}")
+    print(f"  Хранилище: {stats['index_dir']}")
 
 
 @app.command()

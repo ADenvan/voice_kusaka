@@ -1,16 +1,13 @@
 import asyncio
 import collections
-import logging
 from collections.abc import AsyncIterator
-
 
 import numpy as np
 import sounddevice as sd
+from loguru import logger
 
 from src.core.config import Config
 from src.core.exceptions import DeviceNotFoundError
-
-logger = logging.getLogger("voice_ai.audio.input")
 
 
 class RingBuffer:
@@ -73,7 +70,7 @@ class SoundDeviceInput:
                 ),
             )
             self._stream.start()
-            logger.info("Microphone started (sample_rate=%d)", self._sample_rate)
+            logger.info("Microphone started (sample_rate={})", self._sample_rate)
         except Exception as e:
             raise DeviceNotFoundError(f"Failed to open microphone: {e}") from e
 
@@ -96,7 +93,7 @@ class SoundDeviceInput:
             except asyncio.QueueEmpty:
                 break
         if drained > 0:
-            logger.debug("Drained %d stale audio chunks from queue", drained)
+            logger.debug("Drained {} stale audio chunks from queue", drained)
         return drained
 
     async def record_utterance(
@@ -126,7 +123,7 @@ class SoundDeviceInput:
                     if is_speech:
                         speech_started = True
                         logger.info(
-                            "Speech detected at chunk %d (%.1fs)",
+                            "Speech detected at chunk {} ({:.1f}s)",
                             i, len(np.concatenate(chunks)) / self._sample_rate,
                         )
                     else:
@@ -140,7 +137,7 @@ class SoundDeviceInput:
 
                 if silence_count >= max_silence_chunks:
                     logger.info(
-                        "Speech ended: %d silence chunks (%.1fs timeout)",
+                        "Speech ended: {} silence chunks ({:.1f}s timeout)",
                         silence_count, silence_timeout_s,
                     )
                     break
@@ -150,7 +147,7 @@ class SoundDeviceInput:
         audio = np.concatenate(chunks) if chunks else np.array([], dtype=np.float32)
         duration = len(audio) / self._sample_rate
         logger.info(
-            "Recorded %.1fs of audio (%d chunks, speech=%s)",
+            "Recorded {:.1f}s of audio ({} chunks, speech={})",
             duration, len(chunks), speech_started,
         )
         return audio
@@ -177,7 +174,7 @@ class SoundDeviceInput:
                 callback=_callback,
             )
             self._continuous_stream.start()
-            logger.info("Continuous microphone started (sample_rate=%d)", self._sample_rate)
+            logger.info("Continuous microphone started (sample_rate={})", self._sample_rate)
         except Exception as e:
             raise DeviceNotFoundError(f"Failed to open continuous microphone: {e}") from e
 
@@ -227,7 +224,7 @@ class SoundDeviceInput:
                 while total_chunks < max_chunks * 3:
                     try:
                         chunk = await asyncio.wait_for(self._queue.get(), timeout=5.0)
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         if self.shutdown_event is not None and self.shutdown_event.is_set():
                             return
                         continue
@@ -261,33 +258,43 @@ class SoundDeviceInput:
                 duration = len(audio) / self._sample_rate
 
                 if duration < min_duration_s:
-                    logger.debug("Utterance too short: %.1fs, skipping", duration)
+                    logger.debug("Utterance too short: {:.1f}s, skipping", duration)
                     pre_buffer.clear()
                     continue
 
-                logger.info("Captured utterance: %.1fs (%d chunks)", duration, len(chunks))
+                logger.info("Captured utterance: {:.1f}s ({} chunks)", duration, len(chunks))
 
                 if wake_word is not None and not awaiting_command:
-                    wake_audio = audio[:wake_word_samples] if len(audio) >= wake_word_samples else audio
+                    wake_audio = (
+                        audio[:wake_word_samples]
+                        if len(audio) >= wake_word_samples
+                        else audio
+                    )
                     if await wake_word.detect(wake_audio):
                         logger.info("Wake word detected, listening for command...")
                         awaiting_command = True
                         if duration > wake_word_window_s + 1.0:
-                            logger.info("Utterance contains wake word + command (%.1fs), yielding", duration)
+                            logger.info(
+                                "Utterance contains wake word + command ({:.1f}s), yielding",
+                                duration,
+                            )
                             yield audio
                             self.drain_queue()
                             awaiting_command = False
                             continue
                         else:
-                            logger.debug("Short wake word utterance (%.1fs), waiting for command", duration)
+                            logger.debug(
+                                "Short wake word utterance ({:.1f}s), waiting for command",
+                                duration,
+                            )
                             self.drain_queue()
                             continue
                     else:
-                        logger.debug("No wake word in utterance (%.1fs), skipping", duration)
+                        logger.debug("No wake word in utterance ({:.1f}s), skipping", duration)
                         self.drain_queue()
                         continue
                 elif wake_word is not None and awaiting_command:
-                    logger.info("Command utterance captured (%.1fs)", duration)
+                    logger.info("Command utterance captured ({:.1f}s)", duration)
                     yield audio
                     self.drain_queue()
                     awaiting_command = False

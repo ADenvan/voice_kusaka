@@ -5,7 +5,7 @@ class RAGConfig(BaseModel):
     """Configuration for the RAG agent."""
 
     pdf_directory: str = "data/pdf"
-    chroma_persist_dir: str = "data/chroma_db"
+    faiss_index_dir: str = "data/faiss_index"
 
     embedding_model: str = "intfloat/multilingual-e5-large"
     embedding_device: str = "cpu"

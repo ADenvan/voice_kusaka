@@ -1,7 +1,6 @@
 import re
-import logging
 
-logger = logging.getLogger("voice_ai.tts.lang")
+from loguru import logger
 
 _CYRILLIC_RE = re.compile(r"[\u0400-\u04FF\u0500-\u052F]")
 _LATIN_RE = re.compile(r"[a-zA-Z]")
@@ -66,5 +65,8 @@ def segment_by_language(text: str) -> list[tuple[str, str]]:
         else:
             merged.append((lang, seg_text))
 
-    logger.debug("Segmented text into %d parts: %s", len(merged), [(l, t[:20]) for l, t in merged])
+    logger.debug(
+        "Segmented text into {} parts: {}",
+        len(merged), [(lang, t[:20]) for lang, t in merged],
+    )
     return merged

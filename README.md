@@ -42,6 +42,7 @@ ollama pull gpt-oss:20b
 
 ```bash
 LM Studio qwen2.5-coder-7b-instruct
+LM Studio qwen3.5-9b-python-coder
 ```
 
 ### 4. Configure audio output device
@@ -67,10 +68,10 @@ python -m src.cli.app run --lang en # Английский
 ```bash
 # Ollama
 python -m src.cli.app run --provider ollama
-python -m src.cli.app chat --provider ollama
+python -m src.cli.app chat --provider ollama --model qwen2.5:7b
 
 python -m src.cli.app run --log-level DEBUG
-python -m src.cli.app run --mode button     # Enter для активации
+python -m src.cli.app run --provider ollama --mode button --model qwen2.5:7b   # Enter для активации
 python -m src.cli.app run --mode wake_word  # Активация по фразе "войс ай"
 python -m src.cli.app run --mode continuous # Реагировать на любую речь
 
@@ -80,26 +81,24 @@ python -m src.cli.app run --mode continuous # Реагировать на люб
 
 ### Run LM Studio: provider
 ```bash
-# LM Studio
-python -m src.cli.app run --provider lmstudio
-python -m src.cli.app chat --provider lmstudio
-
-# Явно указать провайдер
-python -m src.cli.app chat --provider lmstudio
-
-# Указать провайдер и модель
+# LM Studio chat
 python -m src.cli.app chat --provider lmstudio --model qwen2.5-coder-7b-instruct
+
+# Явно указать провайдер Указать провайдер и модель
+python -m src.cli.app run --provider lmstudio --model qwen2.5-coder-7b-instruct
 
 # С режимами по нажатию кнопки
 python -m src.cli.app run --provider lmstudio --mode button --model qwen2.5-coder-7b-instruct
+python -m src.cli.app run --provider lmstudio --mode button --model qwen3.5-9b-python-coder
 
 # Реагировать на любую речь
 python -m src.cli.app run --provider lmstudio --mode continuous --model qwen2.5-coder-7b-instruct
+python -m src.cli.app run --provider lmstudio --mode continuous --model qwen3.5-9b-python-coder
+python -m src.cli.app run --lang en --provider lmstudio --mode continuous --model qwen3.5-9b-python-coder
 
 # Активация по фразе "войс ай"
 python -m src.cli.app run --provider lmstudio --mode wake_word --model qwen2.5-coder-7b-instruct
 ```
-
 
 ## Show list + config + DEBUG
 ```bash
@@ -152,10 +151,12 @@ pytest tests/ -v -k "not test_models_command"
 ```bash
 # Сканируйте директорию:
 python -m src.cli.app rag-scan
-# Запросите RAG агента:
+# текстовый RAG-запрос (быстрее, без микрофона):
+python -m src.cli.app rag-query "Что такое алгоритмы?" --provider lmstudio --model qwen3.5-9b-python-coder
+
+# Если в .env прописан LM Studio (я уже обновил), можно без флагов:
 python -m src.cli.app rag-query "Что такое сортировка?"
-# Запустите голосовой ассистент (RAG активируется автоматически):
-python -m src.cli.app run
+
 # Полезные команды:
 python -m src.cli.app rag-stats    # Статистика vectorstore
 python -m src.cli.app rag-clear    # Очистить vectorstore

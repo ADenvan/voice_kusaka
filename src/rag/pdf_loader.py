@@ -1,11 +1,9 @@
-import logging
 import os
 
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from loguru import logger
 from pypdf import PdfReader
-
-logger = logging.getLogger("voice_ai.rag.pdf_loader")
 
 
 class PDFDocumentLoader:
@@ -22,7 +20,7 @@ class PDFDocumentLoader:
             for file in files:
                 if file.lower().endswith(".pdf"):
                     file_path = os.path.join(root, file)
-                    logger.debug("Loading PDF: %s", file_path)
+                    logger.debug("Loading PDF: {}", file_path)
                     try:
                         reader = PdfReader(file_path)
                         for page_num, page in enumerate(reader.pages):
@@ -34,8 +32,8 @@ class PDFDocumentLoader:
                                 )
                                 documents.append(doc)
                     except Exception as e:
-                        logger.warning("Failed to load PDF %s: %s", file_path, e)
-        logger.info("Loaded %d pages from %s", len(documents), directory)
+                        logger.warning("Failed to load PDF {}: {}", file_path, e)
+        logger.info("Loaded {} pages from {}", len(documents), directory)
         return documents
 
     def split_documents(self, documents: list[Document]) -> list[Document]:
@@ -45,14 +43,14 @@ class PDFDocumentLoader:
             chunk_overlap=self._chunk_overlap,
         )
         chunks = text_splitter.split_documents(documents)
-        logger.info("Split into %d chunks (chunk_size=%d)", len(chunks), self._chunk_size)
+        logger.info("Split into {} chunks (chunk_size={})", len(chunks), self._chunk_size)
         return chunks
 
     def process_directory(self, directory: str) -> list[Document]:
         """Full pipeline: load PDFs and split into chunks."""
         docs = self.load_from_directory(directory)
         if not docs:
-            logger.warning("No PDF documents found in %s", directory)
+            logger.warning("No PDF documents found in {}", directory)
             return []
         return self.split_documents(docs)
 

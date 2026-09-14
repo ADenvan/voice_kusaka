@@ -112,11 +112,11 @@ bandit -r .
   - `.mypy_cache/`
   - `build/`, `dist/`
 - All changes to versions, dependencies, and linter settings must be managed exclusively via `pyproject.toml`.
-<!-- - When `pyproject.toml` changes, rebuild the environment: `pip install -e . --group dev`. -->
-<!-- - **`requirements.txt`** and **`requirements-dev.txt`** are kept for backward compatibility and manual installs. -->
-- When `requirements.txt` or `requirements-dev.txt` changes, reinstall dependencies:
+- When `pyproject.toml` changes, rebuild the environment: `pip install -e . --group dev`.
+- **`requirements.txt`** and **`requirements-dev.txt`** are kept for backward compatibility and manual installs.
+<!-- - When `requirements.txt` or `requirements-dev.txt` changes, reinstall dependencies:
   - Full reinstall: `pip install -r requirements.txt -r requirements-dev.txt`
-  - Or use `pip-sync requirements.txt requirements-dev.txt` (если установлен `pip-tools`)
+  - Or use `pip-sync requirements.txt requirements-dev.txt` (если установлен `pip-tools`) -->
 ---
 
 <!-- ## Agents

@@ -1,13 +1,11 @@
 import asyncio
-import logging
 
 import numpy as np
 import sounddevice as sd
+from loguru import logger
 from scipy.signal import resample as scipy_resample
 
 from src.core.config import Config
-
-logger = logging.getLogger("voice_ai.audio.output")
 
 
 class SoundDeviceOutput:
@@ -24,16 +22,22 @@ class SoundDeviceOutput:
             try:
                 default_out = int(default_out)
             except (TypeError, ValueError):
-                logger.warning("Could not determine default output device: %r", dev_pair)
+                logger.warning("Could not determine default output device: {!r}", dev_pair)
                 return
             dev = sd.query_devices(default_out)
-            logger.info("Default audio output: [%d] %s (sr=%s, ch=%s)",
-                        default_out, dev['name'], dev['default_samplerate'], dev['max_output_channels'])
+            logger.info(
+                "Default audio output: [{}] {} (sr={}, ch={})",
+                default_out, dev['name'], dev['default_samplerate'],
+                dev['max_output_channels'],
+            )
             if self._output_device is not None:
                 target = sd.query_devices(int(self._output_device))
-                logger.info("Configured output device: [%d] %s", int(self._output_device), target['name'])
+                logger.info(
+                    "Configured output device: [{}] {}",
+                    int(self._output_device), target['name'],
+                )
         except Exception as e:
-            logger.warning("Could not query audio output device: %s", e)
+            logger.warning("Could not query audio output device: {}", e)
 
     def _get_device(self) -> int | None:
         if self._output_device is not None:
@@ -42,8 +46,8 @@ class SoundDeviceOutput:
 
     async def play(self, audio: np.ndarray, sample_rate: int = 48000) -> None:
         self._interrupt = False
-        logger.info("AudioOutput.play: dtype=%s shape=%s sr=%d samples=%d duration=%.2fs "
-                     "min=%.6f max=%.6f rms=%.6f",
+        logger.info("AudioOutput.play: dtype={} shape={} sr={} samples={} duration={:.2f}s "
+                     "min={:.6f} max={:.6f} rms={:.6f}",
                      audio.dtype, audio.shape, sample_rate, len(audio),
                      len(audio) / sample_rate,
                      float(audio.min()), float(audio.max()),
@@ -58,20 +62,20 @@ class SoundDeviceOutput:
             dev_info = sd.query_devices(device)
             dev_sr = int(dev_info['default_samplerate'])
             if dev_sr != sample_rate:
-                logger.info("Resampling %dHz -> %dHz for device [%d] %s",
+                logger.info("Resampling {}Hz -> {}Hz for device [{}] {}",
                             sample_rate, dev_sr, device, dev_info['name'])
                 audio_prepared = resample_audio(audio_prepared, sample_rate, dev_sr)
                 play_sr = dev_sr
 
         audio_2d = audio_prepared.reshape(-1, 1) if audio_prepared.ndim == 1 else audio_prepared
 
-        logger.info("Playing %d samples at %dHz on device %s",
+        logger.info("Playing {} samples at {}Hz on device {}",
                      len(audio_prepared), play_sr, device)
 
         try:
             sd.play(audio_2d, samplerate=play_sr, device=device, blocking=False)
         except Exception as e:
-            logger.error("Playback start error: %s", e, exc_info=True)
+            logger.exception("Playback start error: {}", e)
             return
 
         duration_s = len(audio_prepared) / play_sr

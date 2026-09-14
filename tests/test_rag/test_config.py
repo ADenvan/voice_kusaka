@@ -4,7 +4,7 @@ from src.rag.config import RAGConfig
 def test_rag_config_defaults() -> None:
     config = RAGConfig()
     assert config.pdf_directory == "data/pdf"
-    assert config.chroma_persist_dir == "data/chroma_db"
+    assert config.faiss_index_dir == "data/faiss_index"
     assert config.embedding_model == "intfloat/multilingual-e5-large"
     assert config.embedding_device == "cpu"
     assert config.chunk_size == 1024
@@ -18,13 +18,13 @@ def test_rag_config_defaults() -> None:
 def test_rag_config_custom_values() -> None:
     config = RAGConfig(
         pdf_directory="custom/pdf",
-        chroma_persist_dir="custom/chroma",
+        faiss_index_dir="custom/faiss",
         chunk_size=512,
         retriever_k=5,
         llm_model="custom-model",
     )
     assert config.pdf_directory == "custom/pdf"
-    assert config.chroma_persist_dir == "custom/chroma"
+    assert config.faiss_index_dir == "custom/faiss"
     assert config.chunk_size == 512
     assert config.retriever_k == 5
     assert config.llm_model == "custom-model"

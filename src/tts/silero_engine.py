@@ -1,16 +1,14 @@
 import asyncio
-import logging
 import os
 import re
 import tempfile
 import zipfile
 
 import numpy as np
+from loguru import logger
 
 from src.core.config import Config
 from src.tts.language_detector import segment_by_language
-
-logger = logging.getLogger("voice_ai.tts")
 
 _SILERO_REPO_URL = "https://github.com/snakers4/silero-models/archive/master.zip"
 _SILERO_REPO_DIR_NAME = "snakers4_silero-models_master"
@@ -45,7 +43,7 @@ def _ensure_repo(repo_dir: str) -> None:
         if os.path.exists(tmp_zip):
             os.remove(tmp_zip)
     os.rename(os.path.join(hub_dir, top), repo_dir)
-    logger.info("Silero repo downloaded to %s", repo_dir)
+    logger.info("Silero repo downloaded to {}", repo_dir)
 
 
 class _SileroModel:
@@ -76,9 +74,10 @@ class _SileroModel:
             return
 
         import sys
+
         import torch
 
-        logger.info("Loading Silero TTS model (language=%s)...", self._language)
+        logger.info("Loading Silero TTS model (language={})...", self._language)
 
         hub_dir = torch.hub.get_dir()
         repo_dir = os.path.join(hub_dir, _SILERO_REPO_DIR_NAME)
@@ -131,7 +130,7 @@ class _SileroModel:
         else:
             self._model = result
 
-        logger.info("Silero TTS model loaded (language=%s)", self._language)
+        logger.info("Silero TTS model loaded (language={})", self._language)
 
     def synthesize_sync(self, text: str) -> np.ndarray | None:
         cleaned_text = _clean_text_for_tts(text)
@@ -141,7 +140,7 @@ class _SileroModel:
 
         self._load_model()
         logger.info(
-            "TTS [%s]: synthesizing (%d chars): %.80s%s",
+            "TTS [{}]: synthesizing ({} chars): {:.80s}{}",
             self._language, len(cleaned_text), cleaned_text,
             "..." if len(cleaned_text) > 80 else "",
         )
@@ -161,12 +160,12 @@ class _SileroModel:
             result = audio_tensor.numpy().astype(np.float32)
 
         logger.info(
-            "TTS [%s]: result shape=%s len=%d duration=%.2fs",
+            "TTS [{}]: result shape={} len={} duration={:.2f}s",
             self._language, result.shape, len(result),
             len(result) / self._sample_rate,
         )
         if result.max() == 0 and result.min() == 0:
-            logger.warning("TTS [%s]: result is all zeros (silence)!", self._language)
+            logger.warning("TTS [{}]: result is all zeros (silence)!", self._language)
         return result
 
 
@@ -192,10 +191,10 @@ class SileroTTSEngine:
         try:
             result = await asyncio.to_thread(self._model.synthesize_sync, text)
         except ValueError as e:
-            logger.error("TTS synthesis failed: %s", e)
+            logger.error("TTS synthesis failed: {}", e)
             return None
         except Exception as e:
-            logger.error("TTS synthesis failed: %s", e, exc_info=True)
+            logger.exception("TTS synthesis failed: {}", e)
             return None
 
         if result is None and text.strip():
@@ -239,10 +238,10 @@ class BilingualSileroTTSEngine:
         try:
             return model.synthesize_sync(text)
         except ValueError as e:
-            logger.error("TTS [%s] synthesis failed: %s", language, e)
+            logger.error("TTS [{}] synthesis failed: {}", language, e)
             return None
         except Exception as e:
-            logger.error("TTS [%s] synthesis failed: %s", language, e, exc_info=True)
+            logger.exception("TTS [{}] synthesis failed: {}", language, e)
             return None
 
     async def synthesize(self, text: str) -> np.ndarray | None:
@@ -255,14 +254,14 @@ class BilingualSileroTTSEngine:
             logger.warning("TTS: no segments after language detection")
             return None
 
-        logger.info("TTS: %d language segments detected", len(segments))
+        logger.info("TTS: {} language segments detected", len(segments))
 
         try:
             audio_chunks = await asyncio.to_thread(
                 self._synthesize_all_segments, segments,
             )
         except Exception as e:
-            logger.error("TTS bilingual synthesis error: %s", e, exc_info=True)
+            logger.exception("TTS bilingual synthesis error: {}", e)
             return None
 
         valid_chunks = [chunk for chunk in audio_chunks if chunk is not None]
@@ -272,7 +271,7 @@ class BilingualSileroTTSEngine:
 
         result = np.concatenate(valid_chunks)
         logger.info(
-            "TTS: concatenated %d chunks → shape=%s duration=%.2fs",
+            "TTS: concatenated {} chunks → shape={} duration={:.2f}s",
             len(valid_chunks), result.shape, len(result) / self._sample_rate,
         )
         return result
