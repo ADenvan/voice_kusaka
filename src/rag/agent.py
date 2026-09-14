@@ -63,6 +63,8 @@ class RAGClient:
             openai_api_key=SecretStr(cfg.llm_api_key),  # type: ignore[call-arg]
             model=cfg.llm_model,
             temperature=cfg.llm_temperature,
+            max_tokens=cfg.llm_max_tokens,
+            request_timeout=cfg.llm_timeout,
         )
 
     def _ensure_index_built(self) -> None:
@@ -154,6 +156,28 @@ class RAGClient:
                 return msg.get("content", "")
         return ""
 
+    def _extract_content(self, generation: Any) -> str:
+        """Extract text from generation, with reasoning model fallback."""
+        if hasattr(generation, "content"):
+            text = generation.content
+        else:
+            text = str(generation)
+
+        if isinstance(text, str) and text.strip():
+            return text.strip()
+
+        # Reasoning models (e.g. QwQ/qwen-reasoning) may put answer in reasoning_content
+        reasoning = ""
+        if hasattr(generation, "additional_kwargs"):
+            reasoning = generation.additional_kwargs.get("reasoning_content") or ""
+        if not reasoning and hasattr(generation, "response_metadata"):
+            reasoning = generation.response_metadata.get("reasoning_content") or ""
+        if isinstance(reasoning, str) and reasoning.strip():
+            logger.info("Using reasoning_content as answer ({} chars)", len(reasoning))
+            return reasoning.strip()
+
+        return ""
+
     def _run_graph(self, inputs: dict[str, Any]) -> str:
         """Run the graph synchronously (to be called via asyncio.to_thread)."""
         logger.info("RAG graph started for question: {}", inputs.get("question"))
@@ -162,8 +186,8 @@ class RAGClient:
             gen = event.get("generation")
             if gen is None:
                 continue
-            content = str(gen.content) if hasattr(gen, "content") else str(gen)
-            if content.strip():
+            content = self._extract_content(gen)
+            if content:
                 final_answer = content
                 logger.info("RAG graph produced answer ({} chars)", len(content))
 
@@ -191,4 +215,6 @@ def create_rag_config(config: Config) -> RAGConfig:
         llm_model=config.llm_model,
         llm_api_key=config.llm_api_key,
         llm_temperature=config.rag_llm_temperature,
+        llm_max_tokens=config.llm_max_tokens,
+        llm_timeout=config.llm_timeout,
     )

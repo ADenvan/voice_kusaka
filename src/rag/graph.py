@@ -104,7 +104,16 @@ class RAGGraphBuilder:
         generation = self._llm.invoke([HumanMessage(content=prompt_formatted)])
         elapsed = time.monotonic() - start_time
         content = getattr(generation, "content", generation)
-        logger.info("RAG generation completed in {:.2f}s (chars={})", elapsed, len(str(content)))
+        metadata = getattr(generation, "response_metadata", {}) or {}
+        finish_reason = metadata.get("finish_reason") if isinstance(metadata, dict) else None
+        usage = metadata.get("token_usage") if isinstance(metadata, dict) else None
+        logger.info(
+            "RAG generation completed in {:.2f}s (chars={}, finish_reason={}, usage={})",
+            elapsed,
+            len(str(content)),
+            finish_reason,
+            usage,
+        )
 
         return {"generation": generation}
 

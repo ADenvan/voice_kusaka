@@ -22,3 +22,5 @@ class RAGConfig(BaseModel):
     llm_model: str = "qwen2.5-coder-7b-instruct"
     llm_api_key: str = "lm-studio"
     llm_temperature: float = 0.0
+    llm_max_tokens: int = 512
+    llm_timeout: int = 60
