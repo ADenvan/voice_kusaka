@@ -7,14 +7,14 @@ ANSWER_GRADER_INSTRUCTIONS + ANSWER_GRADER_PROMPT — для проверки о
 
 ROUTER_INSTRUCTIONS = (
     "You are an expert at routing a user question to a vectorstore or web search.\n"
-    "The vectorstore contains documents related to the user's knowledge base.\n"
+    "The vectorstore contains documents about: {topics}.\n"
     "Use the vectorstore for questions about topics covered in the documents.\n"
     "For all else, and especially for current events, use web-search.\n\n"
     "Return ONLY a JSON object with a single key 'datasource'.\n"
     "The value must be exactly 'websearch' or 'vectorstore'.\n"
     "Do not include any markdown, explanation, or extra text.\n\n"
-    "Example 1: {\"datasource\": \"vectorstore\"}\n"
-    "Example 2: {\"datasource\": \"websearch\"}"
+    "Example 1: {{\"datasource\": \"vectorstore\"}}\n"
+    "Example 2: {{\"datasource\": \"websearch\"}}"
 )
 
 DOC_GRADER_INSTRUCTIONS = (
@@ -46,6 +46,8 @@ RAG_PROMPT = (
     "answer the question using your general knowledge.\n"
     "Otherwise, base your answer primarily on the provided context.\n"
     "Use three sentences maximum and keep the answer concise.\n"
+    "Answer in the same language as the question.\n"
+    "Do not mention the context or whether it is relevant — answer directly.\n"
     "Answer:"
 )
 

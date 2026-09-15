@@ -48,6 +48,7 @@ def _state(**kwargs: object) -> RAGGraphState:
         "documents": [],
         "web_search": "No",
         "loop_step": 0,
+        "feedback": "",
     }
     defaults.update(kwargs)  # type: ignore[typeddict-item]
     return defaults
@@ -388,9 +389,10 @@ def test_grade_generation_useful(full_builder: RAGGraphBuilder) -> None:
         "documents": [Document(page_content="doc 1")],
         "web_search": "No",
         "loop_step": 1,
+        "feedback": "",
     }
     result = full_builder._grade_generation(state)
-    assert result == "useful"
+    assert result == {"decision": "useful"}
 
 
 def test_grade_generation_hallucination_fails() -> None:
@@ -419,9 +421,16 @@ def test_grade_generation_hallucination_fails() -> None:
         "documents": [Document(page_content="doc 1")],
         "web_search": "No",
         "loop_step": 1,
+        "feedback": "",
     }
     result = builder._grade_generation(state)
-    assert result == "not_supported"
+    assert result == {
+        "decision": "not_supported",
+        "feedback": (
+            "Your previous answer was not grounded in the provided facts. "
+            "Please answer STRICTLY based on the context."
+        ),
+    }
 
 
 def test_grade_generation_answer_fails() -> None:
@@ -450,9 +459,10 @@ def test_grade_generation_answer_fails() -> None:
         "documents": [Document(page_content="doc 1")],
         "web_search": "No",
         "loop_step": 1,
+        "feedback": "",
     }
     result = builder._grade_generation(state)
-    assert result == "not_useful"
+    assert result == {"decision": "not_useful"}
 
 
 def test_grade_generation_max_retries_reached() -> None:
@@ -470,6 +480,7 @@ def test_grade_generation_max_retries_reached() -> None:
         "documents": [Document(page_content="doc 1")],
         "web_search": "No",
         "loop_step": 3,  # already at max
+        "feedback": "",
     }
     result = builder._grade_generation(state)
-    assert result == "max_retries"
+    assert result == {"decision": "max_retries"}

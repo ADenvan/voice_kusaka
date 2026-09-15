@@ -65,11 +65,13 @@ class Config(BaseSettings):
     rag_chunk_size: int = 1024
     rag_chunk_overlap: int = 200
     rag_retriever_k: int = 3
-    rag_max_retries: int = 3
+    rag_max_retries: int = 1
     rag_use_web_search: bool = True
     rag_llm_temperature: float = 0.0
     rag_mode: str = "simple"  # "simple" | "routing" | "full"
     rag_timeout: int = 180
+    # Update .env to include RAG_ROUTER_TOPICS
+    rag_router_topics: str = ""
 
     log_level: str = "INFO"
 

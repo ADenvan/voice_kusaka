@@ -14,7 +14,7 @@ class RAGConfig(BaseModel):
     chunk_overlap: int = 200
 
     retriever_k: int = 3
-    max_retries: int = 3
+    max_retries: int = 1
     use_web_search: bool = True
 
     llm_provider: str = "lmstudio"
@@ -27,3 +27,4 @@ class RAGConfig(BaseModel):
 
     mode: str = "simple"  # "simple" | "routing" | "full"
     timeout: int = 180
+    router_topics: str = ""

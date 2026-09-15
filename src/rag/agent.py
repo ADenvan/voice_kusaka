@@ -19,7 +19,11 @@ from src.rag.web_search import DuckDuckGoSearchTool
 class RAGClient:
     """RAG agent implementing LLMClient protocol."""
 
-    def __init__(self, rag_config: RAGConfig) -> None:
+    def __init__(
+        self,
+        rag_config: RAGConfig,
+        router_topics: str = "",
+    ) -> None:
         self._config = rag_config
         self._embedding_provider = EmbeddingProvider(
             rag_config.embedding_model,
@@ -35,6 +39,9 @@ class RAGClient:
 
         self._ensure_index_built()
 
+        topics = self._get_topics(router_topics)
+        logger.info("RAG router topics: {}", topics)
+
         self._graph = RAGGraphBuilder(
             self._llm,
             self._vectorstore.as_retriever(rag_config.retriever_k),
@@ -42,6 +49,7 @@ class RAGClient:
             rag_config.use_web_search,
             mode=rag_config.mode,
             max_retries=rag_config.max_retries,
+            router_topics=topics,
         ).build()
         logger.info(
             "RAGClient initialized (model={}, pdf_dir={}, faiss_index={})",
@@ -69,6 +77,22 @@ class RAGClient:
             request_timeout=cfg.llm_timeout,
         )
 
+    def _get_topics(self, provided_topics: str) -> str:
+        """Resolve router topics from config or PDF filenames."""
+        if provided_topics and provided_topics.strip():
+            return provided_topics.strip()
+
+        import os
+        pdf_dir = self._config.pdf_directory
+        if not os.path.exists(pdf_dir):
+            return "General knowledge"
+
+        files = [f for f in os.listdir(pdf_dir) if f.lower().endswith(".pdf")]
+        if not files:
+            return "General knowledge"
+
+        return ", ".join(files)
+    
     def _ensure_index_built(self) -> None:
         """Load existing FAISS index or build one from PDFs."""
         if self._vectorstore.is_index_present():
@@ -220,4 +244,5 @@ def create_rag_config(config: Config) -> RAGConfig:
         llm_timeout=config.llm_timeout,
         mode=config.rag_mode,
         timeout=config.rag_timeout,
+        router_topics=config.rag_router_topics,
     )

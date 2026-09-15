@@ -27,6 +27,7 @@ langchain-community>=0.4.0
 faiss-cpu>=1.15
 pypdf>=4.0.0
 duckduckgo-search>=6.0.0
+ddgs>=9.16.0
 
 # Storage
 aiosqlite>=0.20

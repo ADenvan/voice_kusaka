@@ -35,6 +35,7 @@ class RAGGraphState(TypedDict):
     documents: list[Document]
     web_search: str  # "Yes" / "No" (для routing/full)
     loop_step: int  # счётчик итераций (для full)
+    feedback: str    # Подсказка для повторной генерации (для full)
 
 
 def _format_docs(docs: list[Document]) -> str:
@@ -67,6 +68,7 @@ class RAGGraphBuilder:
         use_web_search: bool = True,
         mode: str = "simple",
         max_retries: int = 3,
+        router_topics: str = "General knowledge",
     ) -> None:
         self._llm = llm
         self._retriever = retriever
@@ -74,6 +76,7 @@ class RAGGraphBuilder:
         self._use_web_search = use_web_search
         self._mode = mode
         self._max_retries = max_retries
+        self._router_topics = router_topics
 
     def build(self) -> Any:
         """Build and compile the graph based on mode."""
@@ -155,7 +158,7 @@ class RAGGraphBuilder:
         workflow.add_edge("web_search", "generate")
         workflow.add_conditional_edges(
             "generate",
-            self._grade_generation,
+            lambda state: self._grade_generation(state)["decision"],
             {
                 "useful": END,
                 "not_useful": "web_search",
@@ -202,6 +205,7 @@ class RAGGraphBuilder:
         question = state["question"]
         documents = state["documents"]
         loop_step = state.get("loop_step", 0)
+        feedback = state.get("feedback", "")
         logger.info(
             "RAG generate: question='{}' documents={} loop_step={}",
             question,
@@ -211,7 +215,12 @@ class RAGGraphBuilder:
 
         start_time = time.monotonic()
         docs_txt = _format_docs(documents)
+        
+        # Добавляем feedback к промпту, если он есть (для осмысленного retry)
         prompt_formatted = RAG_PROMPT.format(context=docs_txt, question=question)
+        if feedback:
+            prompt_formatted += f"\n\nIMPORTANT: {feedback}"
+
         generation = self._llm.invoke([HumanMessage(content=prompt_formatted)])
         elapsed = time.monotonic() - start_time
         content = getattr(generation, "content", generation)
@@ -252,7 +261,10 @@ class RAGGraphBuilder:
         question = state["question"]
 
         result = self._llm.invoke(
-            [SystemMessage(content=ROUTER_INSTRUCTIONS), HumanMessage(content=question)]
+            [
+                SystemMessage(content=ROUTER_INSTRUCTIONS.format(topics=self._router_topics)),
+                HumanMessage(content=question),
+            ]
         )
         content = getattr(result, "content", str(result))
 
@@ -314,7 +326,7 @@ class RAGGraphBuilder:
         logger.debug("---DECISION: GENERATE---")
         return "generate"
 
-    def _grade_generation(self, state: RAGGraphState) -> str:
+    def _grade_generation(self, state: RAGGraphState) -> dict[str, Any]:
         """Grade generation: check hallucination and answer quality."""
         logger.debug("---GRADE GENERATION---")
         question = state["question"]
@@ -325,25 +337,33 @@ class RAGGraphBuilder:
 
         gen_content = getattr(generation, "content", str(generation))
 
-        # 1. Check hallucination
-        hallucination_prompt = HALLUCINATION_GRADER_PROMPT.format(
-            documents=_format_docs(documents), generation=gen_content
-        )
-        result = self._llm.invoke([
-            SystemMessage(content=HALLUCINATION_GRADER_INSTRUCTIONS),
-            HumanMessage(content=hallucination_prompt),
-        ])
-        content = getattr(result, "content", str(result))
+        # 0. Защита от вырожденного цикла: если ответ идентичен предыдущему
+        # В текущем LangGraph state мы не храним предыдущую генерацию.
+        # Пока ограничимся max_retries=1 и feedback.
 
-        try:
-            hallucination_grade = _safe_json_loads(content)["binary_score"].lower()
-        except Exception as e:
-            logger.warning("Hallucination grade JSON parse failed: {}, defaulting to yes", e)
+        # 1. Check hallucination
+        if not documents:
+            logger.info("---DECISION: DOCUMENTS EMPTY, SKIPPING HALLUCINATION CHECK---")
             hallucination_grade = "yes"
+        else:
+            hallucination_prompt = HALLUCINATION_GRADER_PROMPT.format(
+                documents=_format_docs(documents), generation=gen_content
+            )
+            result = self._llm.invoke([
+                SystemMessage(content=HALLUCINATION_GRADER_INSTRUCTIONS),
+                HumanMessage(content=hallucination_prompt),
+            ])
+            content = getattr(result, "content", str(result))
+
+            try:
+                hallucination_grade = _safe_json_loads(content)["binary_score"].lower()
+            except Exception as e:
+                logger.warning("Hallucination grade JSON parse failed: {}, defaulting to yes", e)
+                hallucination_grade = "yes"
+
+        logger.info("Hallucination grade: {} (loop {})", hallucination_grade, loop_step)
 
         if hallucination_grade == "yes":
-            logger.debug("---DECISION: GENERATION GROUNDED IN DOCS---")
-
             # 2. Check answer quality
             answer_prompt = ANSWER_GRADER_PROMPT.format(
                 question=question, generation=gen_content
@@ -360,20 +380,28 @@ class RAGGraphBuilder:
                 logger.warning("Answer grade JSON parse failed: {}, defaulting to yes", e)
                 answer_grade = "yes"
 
+            logger.info("Answer grade: {} (loop {})", answer_grade, loop_step)
+
             if answer_grade == "yes":
-                logger.debug("---DECISION: GENERATION ANSWERS QUESTION---")
-                return "useful"
+                logger.info("---DECISION: GENERATION USEFUL---")
+                return {"decision": "useful"}
 
             # Answer quality failed → web search for better info
             if loop_step < max_retries:
-                logger.debug("---DECISION: GENERATION NOT USEFUL, WEB SEARCH---")
-                return "not_useful"
-            logger.debug("---DECISION: MAX RETRIES REACHED---")
-            return "max_retries"
+                logger.info("---DECISION: GENERATION NOT USEFUL, WEB SEARCH---")
+                return {"decision": "not_useful"}
+            logger.info("---DECISION: MAX RETRIES REACHED---")
+            return {"decision": "max_retries"}
 
-        # Hallucination failed → retry generation
+        # Hallucination failed → retry generation with feedback
         if loop_step < max_retries:
-            logger.debug("---DECISION: GENERATION NOT GROUNDED, RETRY---")
-            return "not_supported"
-        logger.debug("---DECISION: MAX RETRIES REACHED---")
-        return "max_retries"
+            logger.info("---DECISION: GENERATION NOT GROUNDED, RETRY WITH FEEDBACK---")
+            return {
+                "decision": "not_supported",
+                "feedback": (
+                    "Your previous answer was not grounded in the provided facts. "
+                    "Please answer STRICTLY based on the context."
+                ),
+            }
+        logger.info("---DECISION: MAX RETRIES REACHED---")
+        return {"decision": "max_retries"}
