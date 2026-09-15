@@ -28,6 +28,7 @@ def run(
     log_level: str = typer.Option(None, help="Log level"),
     mode: str = typer.Option(None, help="Activation mode: button, wake_word, continuous"),
     lang: str = typer.Option(None, help="Language: ru, en"),
+    rag_mode: str = typer.Option(None, help="RAG mode: simple, routing, full"),
 ) -> None:
     """Start voice assistant pipeline."""
     overrides = {}
@@ -60,6 +61,11 @@ def run(
             print(f"Error: lang must be 'ru' or 'en', got '{lang}'")
             raise typer.Exit(code=1)
         overrides["tts_language"] = lang
+    if rag_mode:
+        if rag_mode not in ("simple", "routing", "full"):
+            print(f"Error: rag_mode must be 'simple', 'routing', or 'full', got '{rag_mode}'")
+            raise typer.Exit(code=1)
+        overrides["rag_mode"] = rag_mode
 
     cfg = Config(_env_file=None, **overrides) if overrides else config
     setup_logging(cfg.log_level)
@@ -67,6 +73,7 @@ def run(
     logger.info("Starting voice_ai pipeline (mode={})", cfg.activation_mode)
     logger.info("  LLM provider: {}", cfg.llm_provider)
     logger.info("  LLM model: {}", cfg.llm_model)
+    logger.info("  RAG mode: {}", cfg.rag_mode)
     logger.info("  Whisper model: {} ({})", cfg.whisper_model, cfg.whisper_device)
     if cfg.activation_mode in ("wake_word", "continuous"):
         logger.info("  Wake word model: {} ({})", cfg.wake_word_model, cfg.wake_word_device)

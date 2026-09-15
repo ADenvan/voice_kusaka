@@ -24,3 +24,6 @@ class RAGConfig(BaseModel):
     llm_temperature: float = 0.0
     llm_max_tokens: int = 512
     llm_timeout: int = 60
+
+    mode: str = "simple"  # "simple" | "routing" | "full"
+    timeout: int = 180

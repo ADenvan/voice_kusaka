@@ -1,3 +1,10 @@
+"""
+ROUTER_INSTRUCTIONS — для маршрутизации
+DOC_GRADER_INSTRUCTIONS + DOC_GRADER_PROMPT — для оценки документов
+HALLUCINATION_GRADER_INSTRUCTIONS + HALLUCINATION_GRADER_PROMPT — для проверки галлюцинаций
+ANSWER_GRADER_INSTRUCTIONS + ANSWER_GRADER_PROMPT — для проверки ответа
+"""
+
 ROUTER_INSTRUCTIONS = (
     "You are an expert at routing a user question to a vectorstore or web search.\n"
     "The vectorstore contains documents related to the user's knowledge base.\n"
@@ -24,8 +31,8 @@ DOC_GRADER_PROMPT = (
     "Return ONLY a JSON object with a single key 'binary_score'.\n"
     "The value must be exactly 'yes' or 'no'.\n"
     "Do not include any markdown, explanation, or extra text.\n\n"
-    "Example 1: {\"binary_score\": \"yes\"}\n"
-    "Example 2: {\"binary_score\": \"no\"}"
+    "Example 1: {{\"binary_score\": \"yes\"}}\n"
+    "Example 2: {{\"binary_score\": \"no\"}}"
 )
 
 RAG_PROMPT = (
@@ -65,7 +72,7 @@ HALLUCINATION_GRADER_PROMPT = (
     "is grounded in the FACTS.\n"
     "'explanation' contains a brief explanation of the score.\n"
     "Do not include any markdown or extra text.\n\n"
-    'Example: {"binary_score": "yes", "explanation": "The answer is supported by the facts."}'
+    'Example: {{"binary_score": "yes", "explanation": "The answer is supported by the facts."}}'
 )
 
 ANSWER_GRADER_INSTRUCTIONS = (
@@ -91,5 +98,5 @@ ANSWER_GRADER_PROMPT = (
     "meets the criteria.\n"
     "'explanation' contains a brief explanation of the score.\n"
     "Do not include any markdown or extra text.\n\n"
-    'Example: {"binary_score": "yes", "explanation": "The answer addresses the question."}'
+    'Example: {{"binary_score": "yes", "explanation": "The answer addresses the question."}}'
 )

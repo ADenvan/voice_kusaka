@@ -40,6 +40,8 @@ class RAGClient:
             self._vectorstore.as_retriever(rag_config.retriever_k),
             self._web_search_tool,
             rag_config.use_web_search,
+            mode=rag_config.mode,
+            max_retries=rag_config.max_retries,
         ).build()
         logger.info(
             "RAGClient initialized (model={}, pdf_dir={}, faiss_index={})",
@@ -100,12 +102,14 @@ class RAGClient:
             "question": question,
             "documents": [],
             "generation": "",
+            "web_search": "No",
+            "loop_step": 0,
         }
 
         try:
             result = await asyncio.wait_for(
                 asyncio.to_thread(self._run_graph, inputs),
-                timeout=60.0,
+                timeout=self._config.timeout,
             )
             return result
         except TimeoutError:
@@ -158,10 +162,7 @@ class RAGClient:
 
     def _extract_content(self, generation: Any) -> str:
         """Extract text from generation, with reasoning model fallback."""
-        if hasattr(generation, "content"):
-            text = generation.content
-        else:
-            text = str(generation)
+        text = generation.content if hasattr(generation, "content") else str(generation)
 
         if isinstance(text, str) and text.strip():
             return text.strip()
@@ -217,4 +218,6 @@ def create_rag_config(config: Config) -> RAGConfig:
         llm_temperature=config.rag_llm_temperature,
         llm_max_tokens=config.llm_max_tokens,
         llm_timeout=config.llm_timeout,
+        mode=config.rag_mode,
+        timeout=config.rag_timeout,
     )

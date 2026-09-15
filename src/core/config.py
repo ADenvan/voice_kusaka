@@ -68,6 +68,8 @@ class Config(BaseSettings):
     rag_max_retries: int = 3
     rag_use_web_search: bool = True
     rag_llm_temperature: float = 0.0
+    rag_mode: str = "simple"  # "simple" | "routing" | "full"
+    rag_timeout: int = 180
 
     log_level: str = "INFO"
 

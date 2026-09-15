@@ -98,6 +98,9 @@ python -m src.cli.app run --lang en --provider lmstudio --mode continuous --mode
 
 # Активация по фразе "войс ай"
 python -m src.cli.app run --provider lmstudio --mode wake_word --model qwen2.5-coder-7b-instruct
+
+# RAG Mod
+python -m src.cli.app run --provider lmstudio --mode button --rag-mode routing
 ```
 
 ## Show list + config + DEBUG
